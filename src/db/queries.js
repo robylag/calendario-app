@@ -1,0 +1,76 @@
+import { useNavigate } from 'react-router-dom';  
+// ESTE ARQUIVO TEM COMO FUNCIONALIDADE CENTRALIZAR AS CONSULTAS E INSERÇÕES AO BANCO DE DADOS SQL
+
+// FUNÇÃO QUE INSERE UMA NOVA RESERVA NO BANCO DE DADOS
+export const InsertReservation = async (reservation) => {
+    // REQUIÇÃO PARA O BACKEND
+    fetch('http://localhost:5000/reservations', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(reservation)
+        })
+        .then(async res => {
+          if (!res.ok) {
+            const errorData = await res.text();
+            console.error('Server response:', errorData);
+            throw new Error(`Erro no servidor (${res.status})`);
+          }
+          return res.json();
+        })
+        .then(data => {
+            console.log('Reserva criada com sucesso:', data);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+    });
+};
+
+// FUNÇÃO QUE REALIZA UMA PESQUISA AO BANCO DE DADOS AO LOGAR UM USUÁRIO
+export const LoginUser = async (email, password,navigate) => {
+    // REQUIÇÃO PARA O BACKEND
+
+    fetch('http://localhost:5000/loginverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email , password })
+    })
+    .then(res => res.json())
+    .then(data => {
+      // SE O LOGIN FOR BEM-SUCEDIDO, ARMAZENA INFORMAÇÕES NO LOCALSTORAGE E REDIRECIONA PARA A PÁGINA PRINCIPAL
+      if(data.success) {
+        localStorage.setItem('isAuthenticated', 'true');
+        localStorage.setItem('userEmail', email);
+        // armazena nome do usuário se fornecido pelo backend
+        const name = data.username || (data.user && data.user.username) || '';
+        const userId = data.user.id_user || (data.user && data.user.id_user) || '';
+        if(name) localStorage.setItem('userName', name);
+        localStorage.setItem('userId', data.user.id_user);
+        navigate("/calendar");
+      }
+      // CASO CONTRÁRIO, EXIBE UMA MENSAGEM DE ERRO
+      else alert("Email ou senha incorretos!");
+    })
+    .catch(err => console.error("Erro na requisição:", err));
+};
+
+// FUNÇÃO QUE CARREGA TODAS AS RESERVAS E AS INSERE AO CALENDARIO
+export const LoadReservations = async (setReservas,reservas) => {
+    console.log("Carregando reservas do banco de dados...");
+    fetch('http://localhost:5000/calendar', { method: 'POST' })
+    .then(res => {
+      if (!res.ok) throw new Error(`Status ${res.status}`);
+      return res.json();
+    })
+    .then(rows => {
+      if (!Array.isArray(rows)) {
+        console.warn('Resposta de reservas não é array:', rows);
+        return;
+      }
+      setReservas(rows);
+      reservas=rows;
+      console.log("Reservas carregadas:", reservas);
+    })
+    .catch(err => console.error("Erro ao carregar reservas:", err));
+}

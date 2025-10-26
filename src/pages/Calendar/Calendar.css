@@ -1,0 +1,215 @@
+.Calendar-Design{
+    margin: auto 0;
+    width: 70%;
+    height: 90vh;
+    padding: 20px;
+}
+
+.Main{
+    display: flex;
+    justify-content: space-between;
+}
+
+.Profile{
+    width: 20%;
+    height: 100vh;
+    background-color: #2673cc;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.Profile-Bar{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    margin-bottom: 50px;
+    color: white;
+}
+
+.Profile-Icon{
+    font-size: 50px;
+}
+
+.rbc-month-view {
+  background-color: #f5f5f5 !important;
+}
+
+.rbc-event {
+  background-color: #2d90f3 !important;
+  color: white;
+  border-radius: 5px;
+}
+
+.rgb-toolbar{
+  background-color: #2673cc !important;
+}
+
+.rbc-toolbar button {
+  background-color: #3399ff;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 5px;
+}
+
+.rbc-toolbar button:hover {
+  background-color: #2673cc;
+}
+
+.ReactModal__Overlay {
+  background-color: rgba(0, 0, 0, 0.6) !important;
+  z-index: 99 !important;
+}
+
+.ReactModal__Content {
+  border-radius: 20px !important;
+  padding: 20px;
+  max-width: 600px;
+  margin: auto;
+}
+
+.Modal-Bar{
+  display: flex;
+  justify-content: space-between;
+}
+
+.Modal-Btn-Close{
+  background-color: transparent;
+  border: 0;
+  font-size: 30px;
+
+  transition: 0.5s;
+}
+
+.Modal-Btn-Close:hover{
+  color: #2673cc;
+}
+
+.Hour-Calendar{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content:space-between;
+}
+
+.Btn-Reserva{
+  padding: 15px;
+  background-color: #227ce4;
+  border: 0;
+  border-radius: 15px;
+  color: #f5f5f5;
+  font-weight: 600;
+  width: 200px;
+  margin-top: 20px;
+
+  transition: 0.5s;
+}
+
+.Btn-Reserva:hover{
+  background-color: transparent;
+  color: #2980e2;
+  border: 1px solid;
+
+  cursor: pointer;
+}
+
+.Modal-Insert{
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  z-index: 100 !important;
+  background-color: white !important;
+  border-radius: 20px !important;
+  padding: 20px;
+  max-width: 500px;
+  margin: auto;
+}
+
+.Insert-Form{
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 5px;
+  margin-top: 20px;
+}
+
+.allDay-Format{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.insert-input{
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+}
+
+hr{
+  color: #ccc;
+}
+
+.selection-item{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 5px;
+}
+
+.select-Items{
+  width: 70%;
+  height: 40px;
+  border-radius: 10px;
+  padding: 10px;
+  border: 1px solid #ccc;
+}
+
+.Btn-Remove-Item{
+  background-color: transparent;
+  border: 0;
+  font-size: 20px;
+  color: #5a5a5a;
+  transition: 0.5s;
+}
+
+.Btn-Remove-Item:hover{
+  color: #2673cc;
+  cursor: pointer;
+}
+
+.Btn-Add-Item{
+  padding: 10px;
+  background-color: #3399ff;
+  border: 0;
+  border-radius: 10px;
+  color: white;
+  font-weight: 600;
+  width: 200px;
+  margin-top: 10px;
+
+  transition: 0.5s;
+}
+
+.items-tab{
+  max-height: 200px;
+  width: 100%;
+  overflow-y: auto;
+}
+
+.Btn-Logout{
+  padding: 10px;
+  background-color: #f5f5f5;
+  border: 0;
+  border-radius: 10px;
+  color: #227ce4;
+  font-weight: 600;
+  width: 200px;
+  margin-top: auto;
+  margin-bottom: 20px;
+
+  transition: 0.5s;
+}
