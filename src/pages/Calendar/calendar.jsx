@@ -1,20 +1,31 @@
 import React, { useState, useEffect, use } from 'react';
-import { useNavigate } from 'react-router-dom'; // Add this import
+
+// NAVEGAÇÃO ENTRE PÁGINAS
+import { useNavigate } from 'react-router-dom';
+
+// ESTILIZAÇÃO DA PÁGINA
 import './Calendar.css';
+
+// FUNÇÕES DE CONSULTA AO BANCO DE DADOS
 import { InsertReservation, LoadReservations } from '../../db/queries';
+
+// BIBLIOTECA RESPONSÁVEL PELOS MODAIS
 import Modal from "react-modal";
+
+// BIBLIOTECA RESPONSÁVEIS PELO CALENDÁRIO
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import 'moment/locale/pt-br';
 
-
+// BIBLIOTECAS DE ICONES PARA FRONT-END
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faXmark,faUser } from "@fortawesome/free-solid-svg-icons";
+import { faXmark, faUser } from "@fortawesome/free-solid-svg-icons";
 
 moment.locale('pt-br');
 Modal.setAppElement('#root');
 
+// TRADUÇÃO DO CALENDÁRIO PARA PORTUGUÊS
 const messages = {
   allDay: 'Dia todo',
   previous: 'Anterior',
@@ -32,43 +43,55 @@ const messages = {
 
 const localizer = momentLocalizer(moment);
 
+// COMONENTE PRINCIPAL DA PÁGINA
 const Main = () => {
-  const navigate = useNavigate(); // Add this line
-
+  // DEFINIÇÃO DO TÍTULO DA PÁGINA
   useEffect(() => {
     document.title = "Calendário - Página Principal";
   }, []);
-  
-  // Eventos já registrados
+
+  // VARIÁVEL PARA NAVEGAR ENTRE PÁGINAS
+  const navigate = useNavigate();
+
+  // CONTROLE DE MODAIS
+  const [ModalDateIsOpen, setModalDateIsOpen] = useState(false);
+  const [isInsertModalOpen, setIsInsertModalOpen] = useState(false);
+  const [rows, setRows] = useState([]);
+
+  // ESTADOS DO CALENDÁRIO
   const [events, setEvents] = useState([]);
 
-  const [isOpen, setIsOpen] = useState(false);
-  const [isInsertModalOpen, setIsInsertModalOpen] = useState(false);
+  // DATA SELECIONADA E EVENTOS DO DIA
   const [selectedDate, setSelectedDate] = useState(null);
   const [dayEvents, setDayEvents] = useState([]);
 
-  const [reservas, setReservas] = useState([]);
+  // ESTADO QUE GUARDA AS RESERVAS CARREGADAS DO BANCO DE DADOS
+  const [reservationData, setReservationData] = useState([]);
 
+  // OPÇÕES DE ITENS PARA RESERVA
   const [itemSelection, setItemSelection] = useState([
-    'Cabo HDMI','Cabo VGA','Cabo fonte','Cabo de Rede'
+    'Cabo HDMI', 'Cabo VGA', 'Cabo fonte', 'Cabo de Rede'
   ]);
 
-  // estados para itens selecionados dinamicamente
-  const [selectedItems, setSelectedItems] = useState([ itemSelection[0] || '' ]);
+  // ESTADO DOS ITENS SELECIONADOS
+  const [selectedItems, setSelectedItems] = useState([itemSelection[0] || '']);
 
-  // controla se é dia todo (desabilita os inputs de hora)
+  // CONTROLA SE A RESERVA É O DIA TODO
   const [isAllDay, setIsAllDay] = useState(false);
 
+  // FUNÇÃO QUE ENVIA A RESERVA PARA O BANCO DE DADOS
   const ReservationSubmit = (e) => {
+    // PREVINE O RECARREGAMENTO DA PÁGINA
     e.preventDefault();
+
+    // COLETA OS DADOS DO FORMULÁRIO
     const form = e.target;
     const fd = new FormData(form);
 
-    // Get form data
     const startTime = fd.get('startTime');
     const endTime = fd.get('endTime');
     const allDayChecked = fd.get('allDay') !== null;
-    
+
     // Get selected items
     const items = [];
     for (const [name, value] of fd.entries()) {
@@ -90,7 +113,7 @@ const Main = () => {
   }
 
   // Função que emite o modal dos horários do dia clicado no calendário
-  const handleSelect = (slotInfo) => {
+  const DateSelect = (slotInfo) => {
     const date = slotInfo.start instanceof Date ? slotInfo.start : new Date(slotInfo.start);
     const eventsOfDay = events.filter(
       (ev) =>
@@ -99,7 +122,7 @@ const Main = () => {
     );
     setSelectedDate(date);
     setDayEvents(eventsOfDay);
-    setIsOpen(true);
+    setModalDateIsOpen(true);
   };
 
   const handleLogout = () => {
@@ -128,10 +151,12 @@ const Main = () => {
   useEffect(() => {
     const loadReservations = async () => {
       try {
-        LoadReservations(setReservas,reservas);
-        console.log("Reservas carregadas após chamada da QUERY:", reservas);
-  
-        const dbEvents = reservas.map(r => {
+        // Aguarda o resultado da função LoadReservations
+        const reservations = await LoadReservations();
+        setRows(reservations); // Atualiza o estado com as reservas carregadas
+        console.log("Reservas carregadas após chamada da QUERY:", reservations);
+
+        const dbEvents = reservations.map(r => {
           const date = r.date_reservation || r.date || r.date_reserve || null;
           const allDay = Number(r.all_day) === 1 || r.allDay === true;
 
@@ -157,9 +182,7 @@ const Main = () => {
           };
         });
 
-        // Substitui ou mescla com eventos existentes — aqui mescla (mantém exemplos iniciais)
         setEvents(prev => {
-          // opcional: evitar duplicatas baseando-se em title+start
           const key = ev => `${ev.title}_${+new Date(ev.start)}`;
           const existingKeys = new Set(prev.map(key));
           const merged = [...prev];
@@ -189,27 +212,27 @@ const Main = () => {
             style={{ height: '100%' }}
             views={['month']}
             selectable
-            onSelectSlot={handleSelect}
-            onSelectEvent={handleSelect}
+            onSelectSlot={DateSelect}
+            onSelectEvent={DateSelect}
           />
         </div>
 
         <div className='Profile'>
           <div className='Profile-Bar'>
-            <FontAwesomeIcon icon={faUser} className='Profile-Icon'/>
+            <FontAwesomeIcon icon={faUser} className='Profile-Icon' />
             <h3>Bem-vindo, {localStorage.getItem('userName') || 'Usuário'}!</h3>
           </div>
           <button onClick={handleLogout} className='Btn-Logout'>Deslogar</button> {/* Add onClick handler */}
         </div>
       </div>
 
-      <Modal isOpen={isOpen} onRequestClose={() => setIsOpen(false)}>
+      <Modal isOpen={ModalDateIsOpen} onRequestClose={() => setModalDateIsOpen(false)}>
         <div className='Modal-Bar'>
           <h2 className='Hour-Style'>
             Eventos em {selectedDate ? moment(selectedDate).format('DD/MM/YYYY') : '...'}
           </h2>
-          <button onClick={() => setIsOpen(false)} className='Modal-Btn-Close'>
-            <FontAwesomeIcon icon={faXmark}/>
+          <button onClick={() => setModalDateIsOpen(false)} className='Modal-Btn-Close'>
+            <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
 
@@ -220,7 +243,7 @@ const Main = () => {
             events={dayEvents}
             startAccessor="start"
             endAccessor="end"
-            style={{ height: 470, width:600 }}
+            style={{ height: 470, width: 600 }}
             views={['day']}
             defaultView="day"
             step={60}       // intervalos de 30 minutos
@@ -241,7 +264,7 @@ const Main = () => {
             Adicionando reserva na data {selectedDate ? moment(selectedDate).format('DD/MM/YYYY') : '...'}
           </h2>
           <button onClick={() => setIsInsertModalOpen(false)} className='Modal-Btn-Close'>
-            <FontAwesomeIcon icon={faXmark}/>
+            <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
 
@@ -273,7 +296,7 @@ const Main = () => {
                 onChange={(e) => setIsAllDay(e.target.checked)}
               />
             </div>
-            
+
             {/* SELEÇÃO DE ITEMS DINAMICA */}
 
             <h3> Item(s) para reservar:</h3>
@@ -295,13 +318,13 @@ const Main = () => {
                   </select>
                   {idx > 0 && (
                     <button type="button" className='Btn-Remove-Item' onClick={() => handleRemoveItem(idx)}>
-                      <FontAwesomeIcon icon={faXmark}/>
+                      <FontAwesomeIcon icon={faXmark} />
                     </button>
                   )}
                 </div>
               ))}
             </div>
-            
+
             <button type="button" className='Btn-Add-Item' onClick={handleAddItem}> Adicionar outro item </button>
 
             {/* BOTÃO DE CONFIRMAÇÃO DA RESERVA */}

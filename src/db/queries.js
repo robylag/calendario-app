@@ -56,21 +56,29 @@ export const LoginUser = async (email, password,navigate) => {
 };
 
 // FUNÇÃO QUE CARREGA TODAS AS RESERVAS E AS INSERE AO CALENDARIO
-export const LoadReservations = async (setReservas,reservas) => {
-    console.log("Carregando reservas do banco de dados...");
-    fetch('http://localhost:5000/calendar', { method: 'POST' })
-    .then(res => {
-      if (!res.ok) throw new Error(`Status ${res.status}`);
-      return res.json();
-    })
-    .then(rows => {
-      if (!Array.isArray(rows)) {
-        console.warn('Resposta de reservas não é array:', rows);
-        return;
+export const LoadReservations = async () => {
+  try {
+    const response = await fetch('http://localhost:5000/calendar', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
       }
-      setReservas(rows);
-      reservas=rows;
-      console.log("Reservas carregadas:", reservas);
-    })
-    .catch(err => console.error("Erro ao carregar reservas:", err));
-}
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    if (!Array.isArray(data)) {
+      console.warn('Response is not an array:', data);
+      return [];
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error loading reservations:', error);
+    return [];
+  }
+};
