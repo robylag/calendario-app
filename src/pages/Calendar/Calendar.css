@@ -63,12 +63,16 @@
 .ReactModal__Overlay {
   background-color: rgba(0, 0, 0, 0.6) !important;
   z-index: 99 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .ReactModal__Content {
   border-radius: 20px !important;
   padding: 20px;
   max-width: 600px;
+  height: 600px;
   margin: auto;
 }
 
@@ -120,12 +124,13 @@
 .Modal-Insert{
   display: flex !important;
   flex-direction: column !important;
-  justify-content: center !important;
+  
   z-index: 100 !important;
   background-color: white !important;
   border-radius: 20px !important;
   padding: 20px;
   max-width: 500px;
+  height: 650px;
   margin: auto;
 }
 

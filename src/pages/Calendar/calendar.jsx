@@ -154,7 +154,6 @@ const Main = () => {
         // Aguarda o resultado da função LoadReservations
         const reservations = await LoadReservations();
         setRows(reservations); // Atualiza o estado com as reservas carregadas
-        console.log("Reservas carregadas após chamada da QUERY:", reservations);
 
         const dbEvents = reservations.map(r => {
           const date = r.date_reservation || r.date || r.date_reserve || null;

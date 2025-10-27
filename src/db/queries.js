@@ -21,6 +21,7 @@ export const InsertReservation = async (reservation) => {
         })
         .then(data => {
             console.log('Reserva criada com sucesso:', data);
+            window.location.reload()
         })
         .catch(error => {
             console.error('Error:', error);
