@@ -83,3 +83,67 @@ export const LoadReservations = async () => {
     return [];
   }
 };
+
+export const GetReservation = async(info_reservation) => {
+  const { inicial_hour, final_hour, date_reservation } = info_reservation;
+  try {
+    const response = await fetch('http://localhost:5000/getreservation', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(info_reservation)
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error getting reservation:', error);
+    return null;
+  }
+};
+
+export const GetItems = async(id_reservation) => {
+  try{
+    const response = await fetch('http://localhost:5000/getitem',{
+      method: 'POST',
+      headers:{
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({id:id_reservation})
+    });
+    if (!response.ok){
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error){
+    console.error('Error getting reservation:', error);
+    return null;
+  }
+};
+
+export const DeleteRe = async(id) =>{
+  try{
+    const response = await fetch('http://localhost:5000/deleteReservation',{
+      method: 'POST',
+      headers:{
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({id:id})
+    });
+    if (!response.ok){
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    if(data != null){
+      return true;
+    }
+    else return false;
+  }catch(error){
+    console.error('Error de deleta:',error);
+    return false;
+  }
+};

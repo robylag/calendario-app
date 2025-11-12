@@ -105,6 +105,39 @@ app.post('/calendar', (req, res) => {
   });
 });
 
+app.post ('/getreservation', (req, res) => {
+  const {inicial_hour,final_hour,date_reservation} = req.body;
+  console.log('Fetching reservation for slotInfo:', req.body);
+  const query = 'SELECT * FROM reservation WHERE inicial_hour = ? AND final_hour = ? AND date_reservation = ?';
+  db.query(query, [inicial_hour,final_hour,date_reservation], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+app.post ('/getitem',(req,res) =>{
+  const id = req.body.id;
+  console.log('Realizando consulta com:',req.body);
+  const query = 'SELECT * FROM item WHERE reservation_id = ?';
+  db.query(query,[id],(err,results) =>{
+    if (err) return res.status(500).json({error: err.message });
+    res.json(results);
+  });
+});
+
+app.post('/deleteReservation',(req,res) =>{
+  const id = req.body.id;
+  console.log("Deletando a consulta com",req.body);
+  const query = 'DELETE FROM reservation WHERE id_reservation = ?';
+  db.query(query,[id],(err,results) =>{
+    if(err) return res.status(500).json({error:err.message});
+    else{
+      console.log("Reserva deletado com sucesso!");
+    }
+    res.json(results);
+  }); 
+});
+
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });

@@ -1,6 +1,5 @@
 require('dotenv').config({ path: __dirname + '/../../.env' });
 const{ DB_HOST, DB_USER, DB_PASSWORD, DB_NAME } = process.env;
-console.log('Arquivo .env lido:', process.env.DB_HOST);
 
 const mysql = require('mysql2');
 

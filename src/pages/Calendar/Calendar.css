@@ -79,25 +79,21 @@
 .Modal-Bar{
   display: flex;
   justify-content: space-between;
+  width: 100%;
 }
 
 .Modal-Btn-Close{
   background-color: transparent;
+  color: #f5f5f5;
   border: 0;
-  font-size: 30px;
+  font-size: 35px;
+  padding: 20px;
 
   transition: 0.5s;
 }
 
 .Modal-Btn-Close:hover{
-  color: #2673cc;
-}
-
-.Hour-Calendar{
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content:space-between;
+  transform: scale(1.3);
 }
 
 .Btn-Reserva{
@@ -121,23 +117,12 @@
   cursor: pointer;
 }
 
-.Modal-Insert{
-  display: flex !important;
-  flex-direction: column !important;
-  
-  z-index: 100 !important;
-  background-color: white !important;
-  border-radius: 20px !important;
-  padding: 20px;
-  max-width: 500px;
-  height: 650px;
-  margin: auto;
-}
+
 
 .Insert-Form{
   display: flex;
   flex-direction: column;
-  width: 100%;
+  width: 80%;
   gap: 5px;
   margin-top: 20px;
 }
@@ -171,13 +156,14 @@ hr{
   border-radius: 10px;
   padding: 10px;
   border: 1px solid #ccc;
+  background-color: #fdfdfd;
 }
 
 .Btn-Remove-Item{
   background-color: transparent;
   border: 0;
   font-size: 20px;
-  color: #5a5a5a;
+  color: #fafafa;
   transition: 0.5s;
 }
 
@@ -200,8 +186,8 @@ hr{
 }
 
 .items-tab{
-  max-height: 200px;
-  width: 100%;
+  max-height: 125px;
+  width: 100% !important;
   overflow-y: auto;
 }
 
@@ -217,4 +203,292 @@ hr{
   margin-bottom: 20px;
 
   transition: 0.5s;
+}
+
+.Btn-Logout:hover{
+  transform: scale(1.2);
+  color: #d3483e;
+}
+
+.Reservation-Hour{
+  display: flex;
+  width: 100%;
+  justify-content: center;
+}
+.Hour-Information{
+  font-size: 18px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.Modal-Header{
+  background-color: #227ce4;
+  color: #f5f5f5;
+  border-radius: 20px 20px 0 0;
+  display: flex;
+  justify-content: space-between;
+}
+
+.Modal-Insert{
+  display: flex !important;
+  flex-direction: column !important;
+  
+  z-index: 100 !important;
+  background-color: white !important;
+  border-radius: 20px !important;
+  padding: 0px;
+  width: 500px !important;
+  height: 650px;
+  margin: auto;
+}
+
+.Hour-Style{
+  padding: 10px;
+}
+
+.Hour-Tab{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #f5f5f5;
+  padding: 10px;
+  border-radius: 9px;
+  border: 1px solid #aeadad;
+  width: 100px;
+
+  box-shadow: 0px 10px 54px -11px rgba(0,0,0,0.4);
+  -webkit-box-shadow: 0px 10px 54px -11px rgba(0,0,0,0.4);
+  -moz-box-shadow: 0px 10px 54px -11px rgba(0,0,0,0.4);
+
+  transition: 0.3s;
+}
+
+.Hour-Tab:hover{
+  transform: scale(1.1);
+}
+
+.Hour-Padding{
+  padding: 20px;
+}
+
+.Name-Padding{
+  display: flex;
+  justify-content: center;
+  padding: 10px;
+}
+
+.Name-Tab{
+  background-color: #53a3ff;
+  color: #f5f5f5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 60%;
+  height: 40px;
+  border-radius: 7px;
+}
+
+.Name-Reservation-Icon{
+  padding: 10px;
+}
+
+.hr-modal{
+  width: 80%;
+  color: #ededed;
+}
+.Itens-Title{
+  font-size: 18px;
+}
+
+.Items-Padding{
+  display: flex;
+  justify-content: center;
+}
+
+.items-tab{
+  display: flex;
+  flex-direction: column;
+  width: 80%;
+}
+
+.Item-Topic{
+  background-color: #9ac7ff;
+  padding: 5px;
+  border-radius: 5px;
+  margin-bottom: 2px;
+  width: auto;
+
+  transition: 0.2s;
+}
+
+.items-tab-view{
+  max-height: 250px;
+  width: 80%;
+  overflow-y: auto;
+}
+
+.Item-Tag{
+  color: #0a52a4;
+  padding-right: 10px;
+}
+
+.Btn-Bar{
+  display: flex;
+  justify-content: space-around;
+  padding: 20px;
+}
+
+.Btn-Modal-Reservation{
+  background-color: #3399ff;
+  border: 0;
+  border-radius: 9px;
+  padding: 10px;
+  color: #ededed;
+  font-weight: 500;
+
+  transition: 0.3s;
+}
+
+.Btn-Modal-Reservation:hover{
+  cursor: pointer;
+  transform: scale(1.1);
+  background-color: #ffffff;
+  border: 1px solid #227ce4;
+  color: #227ce4;
+}
+
+.Btn-Modal-Reservation:disabled{
+  background-color: #8594b1;
+}
+
+.Btn-Modal-Reservation:disabled:hover{
+  color: #fafafa;
+  border: none;
+  transform: scale(1.0);
+  cursor:not-allowed;
+}
+
+.Modal-View-Day{
+  display: flex !important;
+  flex-direction: column !important;
+  
+  z-index: 100 !important;
+  background-color: white !important;
+  border-radius: 20px !important;
+  padding: 0px;
+  width: 500px !important;
+  height: 650px;
+  margin: auto;
+}
+
+.Hour-Calendar{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content:space-between;
+  padding: 10px;
+}
+
+.Hour-View{
+  width: 90% !important;
+}
+
+.Title-View-Modal{
+  background-color: #227ce4;
+  border-radius: 20px 20px 0 0;
+  color: #ededed;
+}
+
+.Modal-Reservation{
+  display: flex !important;
+  flex-direction: column !important;
+  
+  z-index: 100 !important;
+  background-color: white !important;
+  border-radius: 20px !important;
+  padding: 0px;
+  width: 500px !important;
+  height: 550px;
+  margin: auto;
+}
+
+.Modal-Header{
+  background-color: #2673cc;
+}
+
+.Insert{
+  margin: 0 auto;
+  width: 80%;
+}
+
+
+
+
+.selection-item{
+  background-color: #53a3ff;
+  border-radius: 10px;
+  padding: 3px;
+  margin-bottom: 5px;
+}
+
+.Item-Label{
+  color: #ffffff;
+}
+
+.Remove-Condition{
+  display: flex !important;
+  flex-direction: column !important;
+  
+  z-index: 102 !important;
+  background-color: white !important;
+  border-radius: 20px !important;
+  padding: 0px;
+  width: 500px !important;
+  height: 150px;
+  margin: auto;
+}
+
+.p-remove{
+  padding: 15px;
+  font-size: 18px;
+}
+
+.Btn-cancel-remove{
+  padding: 10px;
+  border: 0;
+  border-radius: 9px;
+  background-color: #747474;
+  margin-left: 20px;
+  margin-right: 20px;
+  color: #fafafa;
+
+  transition: 0.3s;
+}
+
+.Btn-cancel-remove:hover{
+  border: 2px solid #d3483e;
+  background-color: white;
+  color: #d3483e;
+  transform: scale(1.1);
+}
+
+.Btn-confirm-remove{
+  padding: 10px;
+  border: 0;
+  border-radius: 9px;
+  background-color: #227ce4;
+  margin-left: 20px;
+  margin-right: 20px;
+  color: #fafafa;
+
+  transition: 0.3s;
+}
+
+.Btn-confirm-remove:hover{
+ border: 2px solid #227ce4;
+ background-color: white;
+ color: #227ce4;
+ transform: scale(1.1); 
 }
