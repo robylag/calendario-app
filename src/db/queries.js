@@ -147,3 +147,25 @@ export const DeleteRe = async(id) =>{
     return false;
   }
 };
+
+export const EditReservation = async(reservation) =>{
+  try{
+    const response = await fetch('http://localhost:5000/editReservation',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json'
+      },
+      body: JSON.stringify(reservation)
+    });
+    if(!response.ok){
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    if(data){
+      window.location.reload()
+    }
+  }catch(error){
+    console.error('Falha na edição da reserva',error);
+    return;
+  }
+};

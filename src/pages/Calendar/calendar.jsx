@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import './Calendar.css';
 
 // FUNÇÕES DE CONSULTA AO BANCO DE DADOS
-import { InsertReservation, LoadReservations, GetReservation, GetItems, DeleteRe} from '../../db/queries';
+import { InsertReservation, LoadReservations, GetReservation, GetItems, DeleteRe, EditReservation} from '../../db/queries';
 
 // BIBLIOTECA RESPONSÁVEL PELOS MODAIS
 import Modal from "react-modal";
@@ -23,10 +23,26 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faXmark, faUser, faHourglassStart, faHourglassEnd, faTag } from "@fortawesome/free-solid-svg-icons";
 import { faClock,faCalendar } from "@fortawesome/free-regular-svg-icons";
 
-moment.locale('pt-br');
 Modal.setAppElement('#root');
 
+// TRADUÇÃO DE MENSAGENS DO CALENDÁRIO
+moment.locale('pt-br');
 const localizer = momentLocalizer(moment);
+const messages = {
+  allDay: 'Dia inteiro',
+  previous: 'Anterior',
+  next: 'Próximo',
+  today: 'Hoje',
+  month: 'Mês',
+  week: 'Semana',
+  day: 'Dia',
+  agenda: 'Agenda',
+  date: 'Data',
+  time: 'Hora',
+  event: 'Evento',
+  showMore: total => `+${total} mais`,
+};
+
 
 // COMONENTE PRINCIPAL DA PÁGINA
 const Main = () => {
@@ -46,6 +62,12 @@ const Main = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editAllow, setEditAllow] = useState(false);
 
+  const [editData, setEditData] = useState({
+    startTime: "",
+    endTime: "",
+    allDay: false
+  });
+
   const [rows, setRows] = useState([]);
 
   // ESTADOS DO CALENDÁRIO
@@ -54,7 +76,7 @@ const Main = () => {
   // DATA SELECIONADA E EVENTOS DO DIA
   const [selectedDate, setSelectedDate] = useState(null);
   const [dayEvents, setDayEvents] = useState([]);
-  const [HourItem, setHourItem] = useState([]);
+  let [HourItem, setHourItem] = useState([]);
   const [selectedReservation, setSelectedReservation] = useState(null);
 
   // OPÇÕES DE ITENS PARA RESERVA
@@ -79,6 +101,22 @@ const Main = () => {
       copy[index] = value;
       return copy;
     });
+  }
+
+  const editChangeItem = (index,value) => {
+    setHourItem(prev => {
+      const copy = [...prev];
+      copy[index] = value;
+      return copy;
+    })
+  }
+
+  const editAddItem = () =>{
+    setHourItem(prev => [...prev,HourItem[0] || '']);
+  }
+
+  const editRemoveItem = (index) => {
+    setHourItem(prev => prev.filter((_,i) => i !== index));
   }
 
   const handleRemoveItem = (index) => {
@@ -117,6 +155,47 @@ const Main = () => {
     };
 
     InsertReservation(reservation);
+  }
+
+  const ReservationEdit = (e) => {
+    e.preventDefault();
+
+    console.log("Executando a funcionalidade de editar uma reserva");
+
+    const form = e.target;
+    const fd = new FormData(form);
+
+    const allDayChecked = fd.get('allDay') !== null;
+    const startTime = allDayChecked ? '00:00' : fd.get('startTime');
+    const endTime = allDayChecked ? '23:59' : fd.get('endTime');
+
+    console.log("Dados da reserva:",startTime,endTime,allDayChecked);
+
+    // Get selected items
+    const items = [];
+    for (const [name, value] of fd.entries()) {
+      if (name.startsWith('item')) items.push(value);
+    }
+
+    console.log("Dados dos items:",items);
+
+    const reservation = {
+      id_reservation: selectedReservation.id_reservation,
+      startTime: startTime,
+      endTime: endTime,
+      allDay: allDayChecked,
+      items: items
+    };
+    
+    EditReservation(reservation);
+  }
+
+  const editChangeHour = (e) => {
+    const { name, value, type, checked } = e.target;
+    setEditData(prev => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value
+    }));
   }
 
   // FUNÇÃO QUE EMITE A DATA SELECIONADA E EXIBE OS HORARIOS DE CADA RESERVA
@@ -192,6 +271,15 @@ const Main = () => {
     navigate('/login');
   };
 
+  const openEditModal = () => {
+    setEditData({
+        startTime: moment(selectedReservation.inicial_hour, "HH:mm:ss").format("HH:mm"),
+        endTime: moment(selectedReservation.final_hour, "HH:mm:ss").format("HH:mm"),
+        allDay: !!selectedReservation.all_day,
+    });
+    setIsEditModalOpen(true);
+  };
+
   // CARREGA AS RESERVAS DO BANCO DE DADOS AO INICIAR A PÁGINA E AS ADICIONA AO CALENDÁRIO
   useEffect(() => {
     const loadReservations = async () => {
@@ -257,6 +345,7 @@ const Main = () => {
             selectable
             onSelectSlot={DateSelect}
             onSelectEvent={DateSelect}
+            messages={messages}
           />
         </div>
 
@@ -294,6 +383,7 @@ const Main = () => {
             date={selectedDate}
             onSelectSlot={HourSelect}
             onSelectEvent={HourSelect}
+            messages={messages}
             className="Hour-View"
           />
           <button className='Btn-Reserva' onClick={() => setIsInsertModalOpen(true)}>
@@ -438,7 +528,7 @@ const Main = () => {
               </div>
             </div>
             <div className='Btn-Bar'>
-                  <button className='Btn-Modal-Reservation' disabled={editAllow} onClick={() => setIsEditModalOpen(true)}>Editar reserva</button>
+                  <button className='Btn-Modal-Reservation' disabled={editAllow} onClick={openEditModal}>Editar reserva</button>
                   <button className='Btn-Modal-Reservation' disabled={editAllow} onClick={() => setIsRemoveCondition(true)}>Remover reserva</button>
             </div>
           </div>
@@ -464,8 +554,8 @@ const Main = () => {
 
         {/* FORMULARIO DE INSERÇÃO DA RESERVA */}
         <div className='Insert'>
-          <form className='Insert-Form' onSubmit={ReservationSubmit}>
-            {selectedReservation ? (
+          <form className='Insert-Form' onSubmit={ReservationEdit}>
+            {editData ? (
               <>
                 <label> Horário Inicial: </label>
                 <input
@@ -474,7 +564,8 @@ const Main = () => {
                   required
                   className='insert-input'
                   disabled={isAllDay}
-                  value={moment(selectedReservation.inicial_hour,'HH:mm:ss').format('HH:mm')}
+                  value={moment(editData.startTime,'HH:mm:ss').format('HH:mm')}
+                  onChange={editChangeHour}
                 />
 
                 <label> Horário Final: </label>
@@ -484,7 +575,8 @@ const Main = () => {
                   required
                   className='insert-input'
                   disabled={isAllDay}
-                  value={moment(selectedReservation.final_hour,'HH:mm:ss').format('HH:mm')}
+                  value={moment(editData.endTime,'HH:mm:ss').format('HH:mm')}
+                  onChange={editChangeHour}
                 />
 
                 <div className='allDay-Format'>
@@ -494,7 +586,7 @@ const Main = () => {
                     name="allDay"
                     checked={isAllDay}
                     onChange={(e) => setIsAllDay(e.target.checked)}
-                    value={selectedReservation.allDay}
+                    value={editData.allDay}
                   />
                 </div>
               </>
@@ -507,22 +599,22 @@ const Main = () => {
             <h3> Item(s) para reserva:</h3>
 
             <div className='items-tab'>
-              {selectedItems.map((sel, idx) => (
+              {HourItem.map((sel, idx) => (
                 <div className='selection-item' key={idx}>
                   <label className='Item-Label'>Item {idx + 1}:</label>
                   <select
                     className='select-Items'
                     name={`item${idx + 1}`}
                     required
-                    value={sel}
-                    onChange={(e) => handleChangeItem(idx, e.target.value)}
+                    value={sel.name_item}
+                    onChange={(e) => editChangeItem(idx, e.target.value)}
                   >
                     {itemSelection.map((item, index) => (
                       <option key={index} value={item}>{item}</option>
                     ))}
                   </select>
                   {idx > 0 && (
-                    <button type="button" className='Btn-Remove-Item' onClick={() => handleRemoveItem(idx)}>
+                    <button type="button" className='Btn-Remove-Item' onClick={() => editRemoveItem(idx)}>
                       <FontAwesomeIcon icon={faXmark} />
                     </button>
                   )}
@@ -530,7 +622,7 @@ const Main = () => {
               ))}
             </div>
 
-            <button type="button" className='Btn-Add-Item' onClick={handleAddItem}> Adicionar outro item </button>
+            <button type="button" className='Btn-Add-Item' onClick={editAddItem}> Adicionar outro item </button>
 
             {/* BOTÃO DE CONFIRMAÇÃO DA RESERVA */}
             <button type="submit" className='Btn-Reserva'> Editar Reserva </button>

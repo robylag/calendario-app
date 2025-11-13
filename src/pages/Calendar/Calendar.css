@@ -492,3 +492,17 @@ hr{
  color: #227ce4;
  transform: scale(1.1); 
 }
+
+.rbc-btn-group button{
+  background-color: #227ce4 !important;
+  border-radius: 7px !important;
+  border: 0 !important;
+  color: #f5f5f5 !important;
+  margin-left: 10px !important;
+}
+
+.rbc-toolbar-label{
+  font-weight: 600;
+  font-size: 25px;
+  text-transform: capitalize;
+}

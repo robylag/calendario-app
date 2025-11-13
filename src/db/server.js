@@ -138,6 +138,46 @@ app.post('/deleteReservation',(req,res) =>{
   }); 
 });
 
+app.post('/editReservation', (req, res) => {
+  const { id_reservation, startTime, endTime, allDay, items } = req.body;
+
+  const updateQuery = 'UPDATE reservation SET inicial_hour = ?, final_hour = ?, all_day = ? WHERE id_reservation = ?';
+  db.query(updateQuery, [startTime, endTime, allDay, id_reservation], (err) => {
+    if (err) return res.status(500).json({ error: err.message });
+
+    console.log("Reserva atualizada, deletando itens antigos...");
+
+    const deleteQuery = 'DELETE FROM item WHERE reservation_id = ?';
+    db.query(deleteQuery, [id_reservation], (err) => {
+      if (err) return res.status(500).json({ error: err.message });
+
+      if (items && items.length > 0) {
+        const insertQuery = 'INSERT INTO item (name_item, reservation_id) VALUES (?, ?)';
+        let completed = 0;
+
+        items.forEach((i) => {
+          db.query(insertQuery, [i, id_reservation], (err) => {
+            if (err) return res.status(500).json({ error: err.message });
+            completed++;
+
+            // Só envia a resposta quando todas as inserções terminarem
+            if (completed === items.length) {
+              console.log("Edição concluída com sucesso");
+              res.json({ success: true, message: "Edição realizada com sucesso" });
+              return true;
+            }
+          });
+        });
+      } else {
+        // Se não houver itens, responde logo
+        res.json({ success: true, message: "Edição realizada (sem itens)" });
+        return true;
+      }
+    });
+  });
+});
+
+
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
