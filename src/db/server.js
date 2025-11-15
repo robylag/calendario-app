@@ -101,6 +101,7 @@ app.post('/calendar', (req, res) => {
   const query = 'SELECT * FROM reservation';
   db.query(query, (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
+    console.log("Enviando reservas:", results);
     res.json(results);
   });
 });

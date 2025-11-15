@@ -20,7 +20,7 @@ import 'moment/locale/pt-br';
 
 // BIBLIOTECAS DE ICONES PARA FRONT-END
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faXmark, faUser, faHourglassStart, faHourglassEnd, faTag } from "@fortawesome/free-solid-svg-icons";
+import { faXmark, faUser, faHourglassStart, faHourglassEnd, faTag, faSun, faMoon } from "@fortawesome/free-solid-svg-icons";
 import { faClock,faCalendar } from "@fortawesome/free-regular-svg-icons";
 
 Modal.setAppElement('#root');
@@ -78,6 +78,9 @@ const Main = () => {
   const [dayEvents, setDayEvents] = useState([]);
   let [HourItem, setHourItem] = useState([]);
   const [selectedReservation, setSelectedReservation] = useState(null);
+  const [morningEvents, setMorningEvents] = useState({});
+  const [afternoonEvents, setAfternoonEvents] = useState({});
+  const [allDayEvents, setAllDayEvents] = useState({});
 
   // OPÇÕES DE ITENS PARA RESERVA
   const [itemSelection, setItemSelection] = useState([
@@ -206,6 +209,15 @@ const Main = () => {
         moment(ev.start).isSame(date, 'day') ||
         (ev.start < date && ev.end >= date)
     );
+    const morningEvent = eventsOfDay.filter((ev) => ev.morning === true);
+    setMorningEvents(morningEvent[0] || {});
+    const afternoonEvent = eventsOfDay.filter((ev) => ev.afternoon === true);
+    setAfternoonEvents(afternoonEvent[0] || {});
+    const allDayEvent = eventsOfDay.filter((ev) => ev.allDay === true);
+    setAllDayEvents(allDayEvent[0] || {});
+
+    console.log(morningEvents,afternoonEvents,allDayEvents);
+
     setSelectedDate(date);
     setDayEvents(eventsOfDay);
     setModalDateIsOpen(true);
@@ -289,8 +301,11 @@ const Main = () => {
         setRows(reservations); // Atualiza o estado com as reservas carregadas
 
         const dbEvents = reservations.map(r => {
-          const date = r.date_reservation || r.date || r.date_reserve || null;
-          const allDay = Number(r.all_day) === 1 || r.allDay === true;
+          console.log("Processando reserva do banco:", r);
+          const date = r.date;
+          const allDay = Number(r.all_time) === 1 || r.all_time === true;
+          const morning = Number(r.morning_time) === 1 || r.morningTime === true;
+          const afternoon = Number(r.after_time) === 1 || r.after_time === true;
 
           const parseDateTime = (d, t) => {
             if (!d) return null;
@@ -298,19 +313,21 @@ const Main = () => {
             return moment(`${d} ${t}`, 'YYYY-MM-DD HH:mm').toDate();
           };
 
-          const start = allDay
-            ? (date ? moment(date, 'YYYY-MM-DD').startOf('day').toDate() : new Date())
-            : parseDateTime(date, r.inicial_hour || r.startTime);
+          const start = date
+            ? (allDay ? parseDateTime(date,'00:00') : (morning ? parseDateTime(date,'00:00') : (afternoon ? parseDateTime(date,'12:00') : parseDateTime(date, '00:00'))))
+            : parseDateTime(date, '00:00');
 
-          const end = allDay
-            ? (date ? moment(date, 'YYYY-MM-DD').endOf('day').toDate() : new Date())
-            : parseDateTime(date, r.final_hour || r.endTime);
+          const end = date
+            ? (allDay ? parseDateTime(date,'24:00') : (morning ? parseDateTime(date,'12:00') : (afternoon ? parseDateTime(date,'24:00') : parseDateTime(date, '00:00'))))
+            : parseDateTime(date, '00:00');
 
           return {
             title: r.name_reservation || r.title || `Reserva ${r.userName || ''}`,
             start: start || new Date(),
             end: end || start || new Date(),
-            allDay
+            allDay,
+            morning,
+            afternoon,
           };
         });
 
@@ -321,6 +338,7 @@ const Main = () => {
           dbEvents.forEach(e => {
             if (!existingKeys.has(key(e))) merged.push(e);
           });
+          console.log("Eventos carregados para o calendário:", merged);
           return merged;
         });
       } catch (err) {
@@ -369,23 +387,38 @@ const Main = () => {
         </div>
 
         <div className='Hour-Calendar'>
-          <Calendar
-            localizer={localizer}
-            events={dayEvents}
-            startAccessor="start"
-            endAccessor="end"
-            style={{ height: 470, width: 600 }}
-            views={['day']}
-            defaultView="day"
-            step={60}       // intervalos de 30 minutos
-            timeslots={1}
-            toolbar={false}
-            date={selectedDate}
-            onSelectSlot={HourSelect}
-            onSelectEvent={HourSelect}
-            messages={messages}
-            className="Hour-View"
-          />
+          <div className='Hours-Reservations'>
+            <div className='Hour-Title'>
+              <h4>Reservas da manhã:</h4>
+              {morningEvents && Object.keys(morningEvents).length > 0 ? (
+                <div className='p-reservation'>
+                  {morningEvents.title}
+                </div>
+              ):(
+                <p>Nenhuma reserva.</p>
+              )}
+            </div>
+            <div className='Hour-Title'>
+              <h4>Reservas da tarde:</h4>
+              {afternoonEvents && Object.keys(afternoonEvents).length > 0 ? (
+                <div className='p-reservation'>
+                  {afternoonEvents.title}
+                </div>
+              ):(
+                <p>Nenhuma reserva.</p>
+              )}
+            </div>
+            <div className='Hour-Title'>
+              <h4>Reservas do dia todo:</h4>
+              {allDayEvents && Object.keys(allDayEvents).length > 0 ? (
+                <div className='p-reservation'>
+                  {allDayEvents.title}
+                </div>
+              ):(
+                <p>Nenhuma reserva.</p>
+              )}
+            </div>
+          </div>
           <button className='Btn-Reserva' onClick={() => setIsInsertModalOpen(true)}>
             Adicionar Reserva
           </button>
@@ -406,30 +439,21 @@ const Main = () => {
         {/* FORMULARIO DE INSERÇÃO DA RESERVA */}
         <div className='Insert'>
           <form className='Insert-Form' onSubmit={ReservationSubmit}>
-            <label> Horário Inicial: </label>
-            <input
-              type="time"
-              name="startTime"
-              required
-              className='insert-input'
-              disabled={isAllDay}
-            />
-            <label> Horário Final: </label>
-            <input
-              type="time"
-              name="endTime"
-              required
-              className='insert-input'
-              disabled={isAllDay}
-            />
-            <div className='allDay-Format'>
-              <label> Dia todo: </label>
-              <input
-                type="checkbox"
-                name="allDay"
-                checked={isAllDay}
-                onChange={(e) => setIsAllDay(e.target.checked)}
-              />
+            <h3> Horário da reserva:</h3>
+
+            <div className='radio-inputs'>
+              <div className='radio-style'>
+                <label className='radio-label'><FontAwesomeIcon icon={faSun} className='icon-radio'/>Manhã</label>
+                <input type='radio' name='hourRadio' className='input-radio'/>
+              </div>
+              <div className='radio-style'>
+                <label className='radio-label'><FontAwesomeIcon icon={faMoon} className='icon-radio'/>Tarde</label>
+                <input type='radio' name='hourRadio' className='input-radio'/>
+              </div>
+              <div className='radio-style'>
+                <label className='radio-label'><FontAwesomeIcon icon={faCalendar} className='icon-radio'/>Dia todo</label>
+                <input type='radio' name='hourRadio' className='input-radio'/>
+              </div>
             </div>
 
             {/* SELEÇÃO DE ITEMS DINAMICA */}
