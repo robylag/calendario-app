@@ -81,7 +81,7 @@ const Main = () => {
 
   // OPÇÕES DE ITENS PARA RESERVA
   const [itemSelection, setItemSelection] = useState([
-    'Cabo HDMI', 'Cabo VGA', 'Cabo fonte', 'Cabo de Rede'
+    'Calibrador', 'Chave de torque', 'Antena 1', 'Tripé 1','Antena 2', 'Tripé 2', 'Cabo Roxo 1', 'Cabo Roxo 2','Cabo Azul 1', 'Cabo Azul 2','Cabo Azul 3', 'Cabo Azul 4','Conector emenda 1', 'Conector emenda 2','Conector emenda 3', 'Conector emenda 4','Adaptador antena/cabo 1', 'Adaptador antena/cabo 2','TurnTable Branca','TurnTabl MDF','Mesa com absorvedores'
   ]);
 
   // ESTADO DOS ITENS SELECIONADOS
@@ -519,12 +519,14 @@ const Main = () => {
             <div className='Items-Padding'>
               <div className='items-tab-view'>
                 <p className='Itens-Title'> Itens reservados: </p>
+                <div className='listing-items'>
                   {HourItem.map(item => (
                     <li key={item.id_item} className='Item-Topic'>
                       <FontAwesomeIcon icon={faTag} className='Item-Tag'/>
                       {item.name_item}
                     </li>
                   ))}
+                </div>
               </div>
             </div>
             <div className='Btn-Bar'>

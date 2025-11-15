@@ -506,3 +506,8 @@ hr{
   font-size: 25px;
   text-transform: capitalize;
 }
+
+.listing-items{
+  max-height: 150px;
+  overflow-y: auto;
+}
