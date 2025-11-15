@@ -211,9 +211,24 @@ hr{
 
 .Reservation-Hour{
   display: flex;
-  width: 100%;
+  width: 80%;
+  margin: 0 auto;
+  margin-top: 20px;
+  margin-bottom: 20px;
   justify-content: center;
+  align-items: center;
+  border-radius: 17px;
+  background-color: #227ce4;
+  color: #f5f5f5;
+  font-weight: 600;
+  box-shadow: 0px 10px 54px -11px rgba(0,0,0,0.4);
+  -webkit-box-shadow: 0px 10px 54px -11px rgba(0,0,0,0.4);
+  -moz-box-shadow: 0px 10px 54px -11px rgba(0,0,0,0.4);
 }
+.Reservation-Hour p{
+  font-size: 17px;
+}
+
 .Hour-Information{
   font-size: 18px;
   display: flex;
@@ -377,8 +392,8 @@ hr{
   background-color: white !important;
   border-radius: 20px !important;
   padding: 0px;
-  width: 500px !important;
-  height: 650px;
+  width: 700px !important;
+  height: 400px;
   margin: auto;
 }
 
@@ -571,9 +586,15 @@ hr{
   -moz-box-shadow: -2px 2px 23px 0px rgba(0,0,0,0.17);
   border-radius: 17px;
   margin-bottom: 15px;
-  width: 400px;
+  width: 500px;
   height: 50px;
   overflow: hidden;
+
+  transition: 0.3s;
+}
+
+.Hour-Title:hover{
+  transform: scale(1.02);
 }
 
 .Hour-Title h4{
@@ -588,4 +609,9 @@ hr{
 
 .p-reservation{
   padding-right: 20px;
+}
+
+.Hour-Reservation-Icon{
+  padding: 5px;
+  font-size: 17px;
 }

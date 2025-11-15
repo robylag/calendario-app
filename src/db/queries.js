@@ -85,14 +85,14 @@ export const LoadReservations = async () => {
 };
 
 export const GetReservation = async(info_reservation) => {
-  const { inicial_hour, final_hour, date_reservation } = info_reservation;
+  const { reservation_date, id_reservation } = info_reservation;
   try {
     const response = await fetch('http://localhost:5000/getreservation', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(info_reservation)
+      body: JSON.stringify({reservation_date, id_reservation})
     });
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);

@@ -75,8 +75,7 @@ const Main = () => {
 
   // DATA SELECIONADA E EVENTOS DO DIA
   const [selectedDate, setSelectedDate] = useState(null);
-  const [dayEvents, setDayEvents] = useState([]);
-  let [HourItem, setHourItem] = useState([]);
+  const [HourItem, setHourItem] = useState([]);
   const [selectedReservation, setSelectedReservation] = useState(null);
   const [morningEvents, setMorningEvents] = useState({});
   const [afternoonEvents, setAfternoonEvents] = useState({});
@@ -89,10 +88,6 @@ const Main = () => {
 
   // ESTADO DOS ITENS SELECIONADOS
   const [selectedItems, setSelectedItems] = useState([itemSelection[0] || '']);
-
-  // CONTROLA SE A RESERVA É O DIA TODO
-  const [isAllDay, setIsAllDay] = useState(false);
-
 
   const handleAddItem = () => {
     setSelectedItems(prev => [...prev, itemSelection[0] || '']);
@@ -136,9 +131,10 @@ const Main = () => {
     const fd = new FormData(form);
 
     // Coletando os horários e verificando se é dia todo
-    const allDayChecked = fd.get('allDay') !== null;
-    const startTime = allDayChecked ? '00:00' : fd.get('startTime');
-    const endTime = allDayChecked ? '23:59' : fd.get('endTime');
+    const typeRadio = fd.get('hourRadio');
+    const allDayChecked = typeRadio === 'allDay';
+    const morningChecked = typeRadio === 'morning';
+    const afternoonChecked = typeRadio === 'afternoon';
 
     // Get selected items
     const items = [];
@@ -151,12 +147,12 @@ const Main = () => {
       userId: localStorage.getItem('userId'),
       userName: localStorage.getItem('userName'), // Send username instead of accessing on server
       date: selectedDate ? moment(selectedDate).format('YYYY-MM-DD') : null,
-      startTime: startTime,
-      endTime: endTime,
+      morningTime: morningChecked,
+      afterTime: afternoonChecked,
       allDay: allDayChecked,
       items: items
     };
-
+    console.log("Dados da reserva:",reservation);
     InsertReservation(reservation);
   }
 
@@ -168,11 +164,10 @@ const Main = () => {
     const form = e.target;
     const fd = new FormData(form);
 
-    const allDayChecked = fd.get('allDay') !== null;
-    const startTime = allDayChecked ? '00:00' : fd.get('startTime');
-    const endTime = allDayChecked ? '23:59' : fd.get('endTime');
-
-    console.log("Dados da reserva:",startTime,endTime,allDayChecked);
+    const typeRadio = fd.get('hourRadio');
+    const allDayChecked = typeRadio === 'allDay';
+    const morningChecked = typeRadio === 'morning';
+    const afternoonChecked = typeRadio === 'afternoon';
 
     // Get selected items
     const items = [];
@@ -183,22 +178,14 @@ const Main = () => {
     console.log("Dados dos items:",items);
 
     const reservation = {
-      id_reservation: selectedReservation.id_reservation,
-      startTime: startTime,
-      endTime: endTime,
+      id_reservation: selectedReservation.idreservation,
+      morningTime: morningChecked,
+      afterTime: afternoonChecked,
       allDay: allDayChecked,
       items: items
     };
-    
-    EditReservation(reservation);
-  }
 
-  const editChangeHour = (e) => {
-    const { name, value, type, checked } = e.target;
-    setEditData(prev => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value
-    }));
+    EditReservation(reservation);
   }
 
   // FUNÇÃO QUE EMITE A DATA SELECIONADA E EXIBE OS HORARIOS DE CADA RESERVA
@@ -216,42 +203,39 @@ const Main = () => {
     const allDayEvent = eventsOfDay.filter((ev) => ev.allDay === true);
     setAllDayEvents(allDayEvent[0] || {});
 
-    console.log(morningEvents,afternoonEvents,allDayEvents);
+    console.log(morningEvent,afternoonEvent,allDayEvent);
 
     setSelectedDate(date);
-    setDayEvents(eventsOfDay);
     setModalDateIsOpen(true);
   };
 
   // FUNÇÃO QUE EXIBE DETALHES DA RESERVA AO CLICAR EM UMA DETERMINADA RESERVA
   const HourSelect = (slotInfo) => {
     // EXTRAINDO INFORMAÇÕES DA RESERVA
-    const inicial_hour = moment(slotInfo.start).format('HH:mm:ss');
-    const final_hour = moment(slotInfo.end).format('HH:mm:ss');
-    const date_reservation = moment(slotInfo.start).format('YYYY-MM-DD');
-    let id_re;
+    const reservation_date = slotInfo ? moment(slotInfo.start).format('YYYY-MM-DD') : null;
+    const id_reservation = slotInfo ? slotInfo.id_reservation : null;
+
+    console.log("Informações da reserva selecionada:",reservation_date,id_reservation);
 
     // CONSULTANDO A RESERVA NO BANCO DE DADOS
     const fetchReservation = async () => {
-      const reservations = await GetReservation({inicial_hour,final_hour,date_reservation});
+      const reservations = await GetReservation({reservation_date, id_reservation});
       console.log('Reserva encontrada:', reservations);
       setSelectedReservation(reservations[0]);
 
-      console.log(localStorage.getItem('userId'),reservations[0].usuario_id);
+      console.log(localStorage.getItem('userId'),reservations[0].fk_idUser);
 
-      if(localStorage.getItem('userId') == reservations[0].usuario_id){
+      if(localStorage.getItem('userId') == reservations[0].fk_idUser){
         setEditAllow(false);
       }
       else{
         setEditAllow(true);
       }
-
-      id_re = reservations[0].id_reservation;
       await fetchItems();
     };
 
     const fetchItems = async () => {
-      const items = await GetItems(id_re);
+      const items = await GetItems(id_reservation);
       console.log('Itens encontrados',items)
       setHourItem(items);
       // ABRINDO O MODAL DE DETALHES DA RESERVA
@@ -262,7 +246,7 @@ const Main = () => {
   };
 
   const DeleteReservation = (selectedReservation) => {
-    const id = selectedReservation.id_reservation;
+    const id = selectedReservation.idreservation;
     console.log("Removendo a consulta com ID: ",id);
     const fetchDelete = async()=>{
       const deleteVerfication = await DeleteRe(id);
@@ -294,7 +278,7 @@ const Main = () => {
 
   // CARREGA AS RESERVAS DO BANCO DE DADOS AO INICIAR A PÁGINA E AS ADICIONA AO CALENDÁRIO
   useEffect(() => {
-    const loadReservations = async () => {
+    const LoadReservationCalendar = async () => {
       try {
         // Aguarda o resultado da função LoadReservations
         const reservations = await LoadReservations();
@@ -302,10 +286,10 @@ const Main = () => {
 
         const dbEvents = reservations.map(r => {
           console.log("Processando reserva do banco:", r);
-          const date = r.date;
-          const allDay = Number(r.all_time) === 1 || r.all_time === true;
-          const morning = Number(r.morning_time) === 1 || r.morningTime === true;
-          const afternoon = Number(r.after_time) === 1 || r.after_time === true;
+          const date = r.data;
+          const allDay = Number(r.allTime) === 1 || r.allTime === true;
+          const morning = Number(r.morningTime) === 1 || r.morningTime === true;
+          const afternoon = Number(r.afterTime) === 1 || r.afterTime === true;
 
           const parseDateTime = (d, t) => {
             if (!d) return null;
@@ -328,6 +312,7 @@ const Main = () => {
             allDay,
             morning,
             afternoon,
+            id_reservation: r.idreservation,
           };
         });
 
@@ -346,7 +331,7 @@ const Main = () => {
       }
     };
 
-    loadReservations();
+    LoadReservationCalendar();
   }, []);
 
   return (
@@ -388,34 +373,40 @@ const Main = () => {
 
         <div className='Hour-Calendar'>
           <div className='Hours-Reservations'>
-            <div className='Hour-Title'>
+            <div className='Hour-Title' onClick={Object.keys(morningEvents).length > 0 ? () => HourSelect(morningEvents):null}>
               <h4>Reservas da manhã:</h4>
               {morningEvents && Object.keys(morningEvents).length > 0 ? (
                 <div className='p-reservation'>
                   {morningEvents.title}
                 </div>
               ):(
-                <p>Nenhuma reserva.</p>
+                <div className='p-reservation'>
+                  Nenhuma reserva.
+                </div>
               )}
             </div>
-            <div className='Hour-Title'>
+            <div className='Hour-Title' onClick={Object.keys(afternoonEvents).length > 0 ? () => HourSelect(afternoonEvents):null}>
               <h4>Reservas da tarde:</h4>
               {afternoonEvents && Object.keys(afternoonEvents).length > 0 ? (
                 <div className='p-reservation'>
                   {afternoonEvents.title}
                 </div>
               ):(
-                <p>Nenhuma reserva.</p>
+                <div className='p-reservation'>
+                  Nenhuma reserva.
+                </div>
               )}
             </div>
-            <div className='Hour-Title'>
+            <div className='Hour-Title' onClick={Object.keys(allDayEvents).length > 0 ? () => HourSelect(allDayEvents):null}>
               <h4>Reservas do dia todo:</h4>
               {allDayEvents && Object.keys(allDayEvents).length > 0 ? (
                 <div className='p-reservation'>
                   {allDayEvents.title}
                 </div>
               ):(
-                <p>Nenhuma reserva.</p>
+                <div className='p-reservation'>
+                  Nenhuma reserva.
+                </div>
               )}
             </div>
           </div>
@@ -426,6 +417,7 @@ const Main = () => {
       </Modal>
 
       {/* MODAL RESPONSÁVEL PARA INSERÇÃO DA RESERVA AO CALENDÁRIO */}
+      {/* === TUDO CERTO AQUI, NÃO MEXER */}
       <Modal isOpen={isInsertModalOpen} onRequestClose={() => setIsInsertModalOpen(false)} className="Modal-Insert">
         <div className='Modal-Header'>
           <h2 className='Hour-Style'>
@@ -444,15 +436,15 @@ const Main = () => {
             <div className='radio-inputs'>
               <div className='radio-style'>
                 <label className='radio-label'><FontAwesomeIcon icon={faSun} className='icon-radio'/>Manhã</label>
-                <input type='radio' name='hourRadio' className='input-radio'/>
+                <input type='radio' name='hourRadio' className='input-radio' value='morning'/>
               </div>
               <div className='radio-style'>
                 <label className='radio-label'><FontAwesomeIcon icon={faMoon} className='icon-radio'/>Tarde</label>
-                <input type='radio' name='hourRadio' className='input-radio'/>
+                <input type='radio' name='hourRadio' className='input-radio' value='afternoon'/>
               </div>
               <div className='radio-style'>
                 <label className='radio-label'><FontAwesomeIcon icon={faCalendar} className='icon-radio'/>Dia todo</label>
-                <input type='radio' name='hourRadio' className='input-radio'/>
+                <input type='radio' name='hourRadio' className='input-radio' value='allDay'/>
               </div>
             </div>
 
@@ -487,7 +479,7 @@ const Main = () => {
             <button type="button" className='Btn-Add-Item' onClick={handleAddItem}> Adicionar outro item </button>
 
             {/* BOTÃO DE CONFIRMAÇÃO DA RESERVA */}
-            <button type="submit" className='Btn-Reserva' onClick={() => setIsEditModalOpen(true)}> Confirmar Reserva </button>
+            <button type="submit" className='Btn-Reserva'> Confirmar Reserva </button>
           </form>
         </div>
       </Modal>
@@ -513,25 +505,16 @@ const Main = () => {
                   </div>
                 </div>
                 <div className='Reservation-Hour'>
-                  <div className='Hour-Padding'>
-                    <div className='Hour-Tab'>
-                      Início:
-                      <strong className='Hour-Information'>
-                        <FontAwesomeIcon icon={faClock} />
-                        {moment(selectedReservation.inicial_hour,'HH:mm:ss').format("HH:mm")}
-                      </strong>
-                    </div>
-                  </div>
-
-                  <div className='Hour-Padding'>
-                    <div className='Hour-Tab'>
-                      Fim:
-                      <strong className='Hour-Information'>
-                        <FontAwesomeIcon icon={faClock} />
-                        {moment(selectedReservation.final_hour,'HH:mm:ss').format("HH:mm")}
-                      </strong>
-                    </div>
-                  </div>
+                  <FontAwesomeIcon icon={faClock} className='Hour-Reservation-Icon'/>
+                  {selectedReservation ? (
+                    selectedReservation.morningTime ? (
+                      <p>Reserva da Manhã</p>
+                    ) : selectedReservation.afterTime ? (
+                      <p>Reserva da Tarde</p>
+                    ) : selectedReservation.allTime ? (
+                      <p>Reserva do Dia todo</p>
+                    ) : null
+                  ) : null}
                 </div>
               </>
             ) : (
@@ -547,7 +530,7 @@ const Main = () => {
                   {HourItem.map(item => (
                     <li key={item.id_item} className='Item-Topic'>
                       <FontAwesomeIcon icon={faTag} className='Item-Tag'/>
-                      {item.name_item}
+                      {item.name}
                     </li>
                   ))}
                 </div>
@@ -583,37 +566,19 @@ const Main = () => {
           <form className='Insert-Form' onSubmit={ReservationEdit}>
             {editData ? (
               <>
-                <label> Horário Inicial: </label>
-                <input
-                  type="time"
-                  name="startTime"
-                  required
-                  className='insert-input'
-                  disabled={isAllDay}
-                  value={moment(editData.startTime,'HH:mm:ss').format('HH:mm')}
-                  onChange={editChangeHour}
-                />
-
-                <label> Horário Final: </label>
-                <input
-                  type="time"
-                  name="endTime"
-                  required
-                  className='insert-input'
-                  disabled={isAllDay}
-                  value={moment(editData.endTime,'HH:mm:ss').format('HH:mm')}
-                  onChange={editChangeHour}
-                />
-
-                <div className='allDay-Format'>
-                  <label> Dia todo: </label>
-                  <input
-                    type="checkbox"
-                    name="allDay"
-                    checked={isAllDay}
-                    onChange={(e) => setIsAllDay(e.target.checked)}
-                    value={editData.allDay}
-                  />
+                <div className='radio-inputs'>
+                  <div className='radio-style'>
+                    <label className='radio-label'><FontAwesomeIcon icon={faSun} className='icon-radio'/>Manhã</label>
+                    <input type='radio' name='hourRadio' className='input-radio' value='morning'/>
+                  </div>
+                  <div className='radio-style'>
+                    <label className='radio-label'><FontAwesomeIcon icon={faMoon} className='icon-radio'/>Tarde</label>
+                    <input type='radio' name='hourRadio' className='input-radio' value='afternoon'/>
+                  </div>
+                  <div className='radio-style'>
+                    <label className='radio-label'><FontAwesomeIcon icon={faCalendar} className='icon-radio'/>Dia todo</label>
+                    <input type='radio' name='hourRadio' className='input-radio' value='allDay'/>
+                  </div>
                 </div>
               </>
             ):(
@@ -632,7 +597,7 @@ const Main = () => {
                     className='select-Items'
                     name={`item${idx + 1}`}
                     required
-                    value={sel.name_item}
+                    value={sel.name}
                     onChange={(e) => editChangeItem(idx, e.target.value)}
                   >
                     {itemSelection.map((item, index) => (

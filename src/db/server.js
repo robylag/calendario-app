@@ -23,6 +23,8 @@ app.post('/loginverify', (req, res) => {
     return res.status(400).json({ error: 'Email e senha são obrigatórios' });
   }
 
+  console.log('Verificando login para:', email);
+
   const query = 'SELECT * FROM `user` WHERE email = ? AND password = ?';
   db.query(query, [email, password], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -36,17 +38,17 @@ app.post('/loginverify', (req, res) => {
 });
 
 app.post('/reservations', (req, res) => {
-  const { userId, userName, date, startTime, endTime, allDay, items } = req.body;
+  const { userId, userName, date, morningTime, afterTime, allDay, items } = req.body;
 
   console.log('Creating reservation for user ID:', userId);
-  console.log('Reservation details:', { date, startTime, endTime, allDay, items });
+  console.log('Reservation details:', { date, morningTime, afterTime, allDay, items });
 
   try {
     const name_reservation = "Reserva de " + userName;
-    const query = 'INSERT INTO reservation (name_reservation, date_reservation, inicial_hour, final_hour, all_day, usuario_id) VALUES (?, ?, ?, ?, ?, ?)';
+    const query = 'INSERT INTO reservation (name_reservation,data,morningTime,afterTime,allTime,fk_idUser) VALUES (?,?,?,?,?,?);';
     
     // First insert the reservation
-    db.query(query, [name_reservation, date, startTime, endTime, allDay, userId], (err, results) => {
+    db.query(query, [name_reservation, date, morningTime, afterTime, allDay, userId], (err, results) => {
       if (err) {
         console.error('Erro ao criar reserva:', err);
         return res.status(500).json({ error: err.message });
@@ -60,7 +62,7 @@ app.post('/reservations', (req, res) => {
 
       // Then insert items using the reservation ID
       if (items && items.length > 0) {
-        const itemQuery = 'INSERT INTO item (name_item, reservation_id) VALUES (?, ?)';
+        const itemQuery = 'INSERT INTO item (name, fk_idReservation) VALUES (?, ?)';
         let insertedItems = 0;
 
         items.forEach(item => {
@@ -107,11 +109,12 @@ app.post('/calendar', (req, res) => {
 });
 
 app.post ('/getreservation', (req, res) => {
-  const {inicial_hour,final_hour,date_reservation} = req.body;
+  const {reservation_date, id_reservation} = req.body;
   console.log('Fetching reservation for slotInfo:', req.body);
-  const query = 'SELECT * FROM reservation WHERE inicial_hour = ? AND final_hour = ? AND date_reservation = ?';
-  db.query(query, [inicial_hour,final_hour,date_reservation], (err, results) => {
+  const query = 'SELECT * FROM reservation WHERE data = ? AND idreservation = ?';
+  db.query(query, [reservation_date,id_reservation], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
+    console.log('Reservation results:', results);
     res.json(results);
   });
 });
@@ -119,7 +122,7 @@ app.post ('/getreservation', (req, res) => {
 app.post ('/getitem',(req,res) =>{
   const id = req.body.id;
   console.log('Realizando consulta com:',req.body);
-  const query = 'SELECT * FROM item WHERE reservation_id = ?';
+  const query = 'SELECT * FROM item WHERE fk_idReservation = ?';
   db.query(query,[id],(err,results) =>{
     if (err) return res.status(500).json({error: err.message });
     res.json(results);
@@ -129,7 +132,7 @@ app.post ('/getitem',(req,res) =>{
 app.post('/deleteReservation',(req,res) =>{
   const id = req.body.id;
   console.log("Deletando a consulta com",req.body);
-  const query = 'DELETE FROM reservation WHERE id_reservation = ?';
+  const query = 'DELETE FROM reservation WHERE idreservation = ?';
   db.query(query,[id],(err,results) =>{
     if(err) return res.status(500).json({error:err.message});
     else{
@@ -140,20 +143,20 @@ app.post('/deleteReservation',(req,res) =>{
 });
 
 app.post('/editReservation', (req, res) => {
-  const { id_reservation, startTime, endTime, allDay, items } = req.body;
+  const { id_reservation, morningTime, afterTime, allDay, items } = req.body;
 
-  const updateQuery = 'UPDATE reservation SET inicial_hour = ?, final_hour = ?, all_day = ? WHERE id_reservation = ?';
-  db.query(updateQuery, [startTime, endTime, allDay, id_reservation], (err) => {
+  const updateQuery = 'UPDATE reservation SET morningTime = ?, afterTime = ?, allTime = ? WHERE idreservation = ?';
+  db.query(updateQuery, [morningTime, afterTime, allDay, id_reservation], (err) => {
     if (err) return res.status(500).json({ error: err.message });
 
     console.log("Reserva atualizada, deletando itens antigos...");
 
-    const deleteQuery = 'DELETE FROM item WHERE reservation_id = ?';
+    const deleteQuery = 'DELETE FROM item WHERE fk_idReservation = ?';
     db.query(deleteQuery, [id_reservation], (err) => {
       if (err) return res.status(500).json({ error: err.message });
 
       if (items && items.length > 0) {
-        const insertQuery = 'INSERT INTO item (name_item, reservation_id) VALUES (?, ?)';
+        const insertQuery = 'INSERT INTO item (name, fk_idReservation) VALUES (?, ?)';
         let completed = 0;
 
         items.forEach((i) => {
