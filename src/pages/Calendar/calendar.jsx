@@ -62,9 +62,6 @@ const Main = () => {
         // EXECUTA A FUNÇÃO DE CONSULTAR AS RESERVAS REGISTRADAS AO BANCO DE DADOS
         const reservations = await LoadReservations();
 
-        // ATUALIZA O ESTADO COM AS RESERVAS CARREGADAS
-        setRows(reservations);
-
         // COLETANDO CADA RESERVA E TRANSFORMANDO EM EVENTO DO CALENDÁRIO
         const dbEvents = reservations.map(r => {
           console.log("Processando a Reserva:", r);
@@ -88,7 +85,7 @@ const Main = () => {
             : parseDateTime(date, '00:00');
 
           const end = date
-            ? (allDay ? parseDateTime(date,'24:00') : (morning ? parseDateTime(date,'12:00') : (afternoon ? parseDateTime(date,'24:00') : parseDateTime(date, '00:00'))))
+            ? (allDay ? parseDateTime(date,'23:59') : (morning ? parseDateTime(date,'12:00') : (afternoon ? parseDateTime(date,'23:59') : parseDateTime(date, '00:00'))))
             : parseDateTime(date, '00:00');
 
           // RETORNANDO O FORMATO DA RESERVA PARA O CALENDÁRIO
@@ -104,7 +101,7 @@ const Main = () => {
         });
 
         // ATRIBUINDO AS RESERVAS AO CALENDÁRIO
-        setEvents(prev => {
+        setReservationsEvents(prev => {
           const key = ev => `${ev.title}_${+new Date(ev.start)}`;
           const existingKeys = new Set(prev.map(key));
           const merged = [...prev];
@@ -123,69 +120,53 @@ const Main = () => {
     LoadReservationCalendar();
   }, []);
 
+  // FUNÇÃO DE LOGOUT DO USUÁRIO
+  const handleLogout = () => {
+    localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('userEmail');
+    navigate('/login');
+  };
+
   // ESTADOS DE CONTROLE DE MODAIS DA PÁGINA
   const [isModalListReservationOpen, setIsModalListReservationOpen] = useState(false);        // MODAL QUE LISTA AS RESERVAS DO DIA
   const [isModalInsertReservationOpen, setIsModalInsertReservationOpen] = useState(false);    // MODAL DE INSERÇÃO DE RESERVAS
   const [isModalInfoReservationOpen, setIsModalInfoReservationOpen] = useState(false);        // MODAL DE INFORMAÇÕES DA RESERVA
   const [isModalRemoveCondition,setIsModalRemoveCondition] = useState(false);                 // MODAL DE CONFIRMAÇÃO DE REMOÇÃO
   const [isModalEditOpen, setIsModalEditOpen] = useState(false);                              // MODAL DE EDIÇÃO DE RESERVA
-
-  // ESTADOS DE CONTROLE DE CALENDÁRIO E RESERVAS
-
-  const [editAllow, setEditAllow] = useState(false);
-
-
-  const [rows, setRows] = useState([]);
-
-  // ESTADOS DO CALENDÁRIO
-  const [events, setEvents] = useState([]);
-
-  // DATA SELECIONADA E EVENTOS DO DIA
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [HourItem, setHourItem] = useState([]);
-  const [selectedReservation, setSelectedReservation] = useState(null);
-  const [morningEvents, setMorningEvents] = useState({});
-  const [afternoonEvents, setAfternoonEvents] = useState({});
-  const [allDayEvents, setAllDayEvents] = useState({});
+  const [editAllow, setEditAllow] = useState(false);                                        // ESTADO QUE DEFINE SE O USUÁRIO PODE EDITAR A RESERVA OU NÃO
+  const [reservationsEvents, setReservationsEvents] = useState([]);                   // ESTADO QUE ARMAZENA AS RESERVAS DO CALENDÁRIO
+  const [selectedDate, setSelectedDate] = useState(null);                             // ESTADO QUE ARMAZENA A DATA SELECIONADA
+  const [selectedItemsReservations, setSelectedItemsReservations] = useState([]);     // ESTADO QUE ARMAZENA OS ITENS DA RESERVA SELECIONADA
+  const [selectedReservation, setSelectedReservation] = useState(null);               // ESTADO QUE ARMAZENA A RESERVA SELECIONADA
+  const [morningEventDate, setMornignEventDate] = useState({});                       // ESTADO QUE DEFINE QUAL RESERVA SELECIONADA É O DE AMANHÂ
+  const [afternoonEventDate, setAfternoonEventDate] = useState({});                   // ESTADO QUE DEFINE QUAL RESERVA SELECIONADA É O DE TARDE
+  const [allDayEventDate, setAllDayEventDate] = useState({});                         // ESTADO QUE DEFINE QUAL RESERVA SELECIONADA É O DE DIA TODO
+  const [insertedItems, setInsertedItems] = useState(['']);                           // ESTADO QUE ARMAZENA OS ITENS INSERIDOS NA RESERVA
 
   // OPÇÕES DE ITENS PARA RESERVA
-  const [itemSelection, setItemSelection] = useState([
-    'Calibrador', 'Chave de torque', 'Antena 1', 'Tripé 1','Antena 2', 'Tripé 2', 'Cabo Roxo 1', 'Cabo Roxo 2','Cabo Azul 1', 'Cabo Azul 2','Cabo Azul 3', 'Cabo Azul 4','Conector emenda 1', 'Conector emenda 2','Conector emenda 3', 'Conector emenda 4','Adaptador antena/cabo 1', 'Adaptador antena/cabo 2','TurnTable Branca','TurnTabl MDF','Mesa com absorvedores'
-  ]);
+  const itemSelection =[
+    'Calibrador', 'Chave de torque', 'Antena 1',
+    'Tripé 1','Antena 2', 'Tripé 2', 'Cabo Roxo 1',
+    'Cabo Roxo 2','Cabo Azul 1', 'Cabo Azul 2','Cabo Azul 3',
+    'Cabo Azul 4','Conector emenda 1', 'Conector emenda 2',
+    'Conector emenda 3', 'Conector emenda 4','Adaptador antena/cabo 1',
+    'Adaptador antena/cabo 2','TurnTable Branca','TurnTabl MDF','Mesa com absorvedores'
+  ];
 
   // ESTADO DOS ITENS SELECIONADOS
-  const [selectedItems, setSelectedItems] = useState([itemSelection[0] || '']);
-
-  const handleAddItem = () => {
-    setSelectedItems(prev => [...prev, itemSelection[0] || '']);
+  const addItem = (arrayItem,setArrayItem) => {
+    setArrayItem(prev => [...prev,arrayItem[0] || '']);
+  }
+  const removeItem = (setArrayItem,index) => {
+    setArrayItem(prev => prev.filter((_,i) => i !== index));
   }
 
-  const handleChangeItem = (index, value) => {
-    setSelectedItems(prev => {
+  const changeItem = (setArrayItem,index,value) => {
+    setArrayItem(prev => {
       const copy = [...prev];
       copy[index] = value;
       return copy;
     });
-  }
-
-  const editChangeItem = (index,value) => {
-    setHourItem(prev => {
-      const copy = [...prev];
-      copy[index] = value;
-      return copy;
-    })
-  }
-
-  const editAddItem = () =>{
-    setHourItem(prev => [...prev,HourItem[0] || '']);
-  }
-
-  const editRemoveItem = (index) => {
-    setHourItem(prev => prev.filter((_,i) => i !== index));
-  }
-
-  const handleRemoveItem = (index) => {
-    setSelectedItems(prev => prev.filter((_, i) => i !== index));
   }
 
   // FUNÇÃO QUE ENVIA A RESERVA PARA O BANCO DE DADOS
@@ -194,8 +175,7 @@ const Main = () => {
     e.preventDefault();
 
     // COLETA OS DADOS DO FORMULÁRIO
-    const form = e.target;
-    const fd = new FormData(form);
+    const fd = new FormData(e.target);
 
     // Coletando os horários e verificando se é dia todo
     const typeRadio = fd.get('hourRadio');
@@ -258,17 +238,18 @@ const Main = () => {
   // FUNÇÃO QUE EMITE A DATA SELECIONADA E EXIBE OS HORARIOS DE CADA RESERVA
   const getDateReservations = (slotInfo) => {
     const date = slotInfo.start instanceof Date ? slotInfo.start : new Date(slotInfo.start);
-    const eventsOfDay = events.filter(
+    console.log("Data selecionada no calendário:",date);
+    const eventsOfDay = reservationsEvents.filter(
       (ev) =>
         moment(ev.start).isSame(date, 'day') ||
         (ev.start < date && ev.end >= date)
     );
     const morningEvent = eventsOfDay.filter((ev) => ev.morning === true);
-    setMorningEvents(morningEvent[0] || {});
+    setMornignEventDate(morningEvent[0] || {});
     const afternoonEvent = eventsOfDay.filter((ev) => ev.afternoon === true);
-    setAfternoonEvents(afternoonEvent[0] || {});
+    setAfternoonEventDate(afternoonEvent[0] || {});
     const allDayEvent = eventsOfDay.filter((ev) => ev.allDay === true);
-    setAllDayEvents(allDayEvent[0] || {});
+    setAllDayEventDate(allDayEvent[0] || {});
 
     console.log(morningEvent,afternoonEvent,allDayEvent);
 
@@ -304,7 +285,7 @@ const Main = () => {
     const fetchItems = async () => {
       const items = await GetItems(id_reservation);
       console.log('Itens encontrados',items)
-      setHourItem(items);
+      setSelectedItemsReservations(items);
       // ABRINDO O MODAL DE DETALHES DA RESERVA
       setIsModalInfoReservationOpen(true);
     }
@@ -327,20 +308,13 @@ const Main = () => {
     fetchDelete();
   };
 
-  // FUNÇÃO DE LOGOUT DO USUÁRIO
-  const handleLogout = () => {
-    localStorage.removeItem('isAuthenticated');
-    localStorage.removeItem('userEmail');
-    navigate('/login');
-  };
-
   return (
     <div className='Website-Main'>
       <div className='Main'>
         <div className="Calendar-Design">
           <Calendar
             localizer={localizer}
-            events={events}
+            events={reservationsEvents}
             startAccessor="start"
             endAccessor="end"
             style={{ height: '100%' }}
@@ -373,11 +347,11 @@ const Main = () => {
 
         <div className='Hour-Calendar'>
           <div className='Hours-Reservations'>
-            <div className='Hour-Title' onClick={Object.keys(morningEvents).length > 0 ? () => getReservationInfo(morningEvents):null}>
+            <div className='Hour-Title' onClick={Object.keys(morningEventDate).length > 0 ? () => getReservationInfo(morningEventDate):null}>
               <h4>Reservas da manhã:</h4>
-              {morningEvents && Object.keys(morningEvents).length > 0 ? (
+              {morningEventDate && Object.keys(morningEventDate).length > 0 ? (
                 <div className='p-reservation'>
-                  {morningEvents.title}
+                  {morningEventDate.title}
                 </div>
               ):(
                 <div className='p-reservation'>
@@ -385,11 +359,11 @@ const Main = () => {
                 </div>
               )}
             </div>
-            <div className='Hour-Title' onClick={Object.keys(afternoonEvents).length > 0 ? () => getReservationInfo(afternoonEvents):null}>
+            <div className='Hour-Title' onClick={Object.keys(afternoonEventDate).length > 0 ? () => getReservationInfo(afternoonEventDate):null}>
               <h4>Reservas da tarde:</h4>
-              {afternoonEvents && Object.keys(afternoonEvents).length > 0 ? (
+              {afternoonEventDate && Object.keys(afternoonEventDate).length > 0 ? (
                 <div className='p-reservation'>
-                  {afternoonEvents.title}
+                  {afternoonEventDate.title}
                 </div>
               ):(
                 <div className='p-reservation'>
@@ -397,11 +371,11 @@ const Main = () => {
                 </div>
               )}
             </div>
-            <div className='Hour-Title' onClick={Object.keys(allDayEvents).length > 0 ? () => getReservationInfo(allDayEvents):null}>
+            <div className='Hour-Title' onClick={Object.keys(allDayEventDate).length > 0 ? () => getReservationInfo(allDayEventDate):null}>
               <h4>Reservas do dia todo:</h4>
-              {allDayEvents && Object.keys(allDayEvents).length > 0 ? (
+              {allDayEventDate && Object.keys(allDayEventDate).length > 0 ? (
                 <div className='p-reservation'>
-                  {allDayEvents.title}
+                  {allDayEventDate.title}
                 </div>
               ):(
                 <div className='p-reservation'>
@@ -453,7 +427,7 @@ const Main = () => {
             <h3> Item(s) para reserva:</h3>
 
             <div className='items-tab'>
-              {selectedItems.map((sel, idx) => (
+              {insertedItems.map((sel, idx) => (
                 <div className='selection-item' key={idx}>
                   <label className='Item-Label'>Item {idx + 1}:</label>
                   <select
@@ -461,14 +435,14 @@ const Main = () => {
                     name={`item${idx + 1}`}
                     required
                     value={sel}
-                    onChange={(e) => handleChangeItem(idx, e.target.value)}
+                    onChange={(e) => changeItem(setInsertedItems,idx, e.target.value)}
                   >
                     {itemSelection.map((item, index) => (
                       <option key={index} value={item}>{item}</option>
                     ))}
                   </select>
                   {idx > 0 && (
-                    <button type="button" className='Btn-Remove-Item' onClick={() => handleRemoveItem(idx)}>
+                    <button type="button" className='Btn-Remove-Item' onClick={() => removeItem(setInsertedItems,idx)}>
                       <FontAwesomeIcon icon={faXmark} />
                     </button>
                   )}
@@ -476,7 +450,7 @@ const Main = () => {
               ))}
             </div>
 
-            <button type="button" className='Btn-Add-Item' onClick={handleAddItem}> Adicionar outro item </button>
+            <button type="button" className='Btn-Add-Item' onClick={() => addItem(itemSelection,setInsertedItems)}> Adicionar outro item </button>
 
             {/* BOTÃO DE CONFIRMAÇÃO DA RESERVA */}
             <button type="submit" className='Btn-Reserva'> Confirmar Reserva </button>
@@ -527,7 +501,7 @@ const Main = () => {
               <div className='items-tab-view'>
                 <p className='Itens-Title'> Itens reservados: </p>
                 <div className='listing-items'>
-                  {HourItem.map(item => (
+                  {selectedItemsReservations.map(item => (
                     <li key={item.id_item} className='Item-Topic'>
                       <FontAwesomeIcon icon={faTag} className='Item-Tag'/>
                       {item.name}
@@ -584,7 +558,7 @@ const Main = () => {
             <h3> Item(s) para reserva:</h3>
 
             <div className='items-tab'>
-              {HourItem.map((sel, idx) => (
+              {selectedItemsReservations.map((sel, idx) => (
                 <div className='selection-item' key={idx}>
                   <label className='Item-Label'>Item {idx + 1}:</label>
                   <select
@@ -592,14 +566,14 @@ const Main = () => {
                     name={`item${idx + 1}`}
                     required
                     value={sel.name}
-                    onChange={(e) => editChangeItem(idx, e.target.value)}
+                    onChange={(e) => changeItem(setSelectedItemsReservations,idx, e.target.value)}
                   >
                     {itemSelection.map((item, index) => (
                       <option key={index} value={item}>{item}</option>
                     ))}
                   </select>
                   {idx > 0 && (
-                    <button type="button" className='Btn-Remove-Item' onClick={() => editRemoveItem(idx)}>
+                    <button type="button" className='Btn-Remove-Item' onClick={() => removeItem(setSelectedItemsReservations,idx)}>
                       <FontAwesomeIcon icon={faXmark} />
                     </button>
                   )}
@@ -607,7 +581,7 @@ const Main = () => {
               ))}
             </div>
 
-            <button type="button" className='Btn-Add-Item' onClick={editAddItem}> Adicionar outro item </button>
+            <button type="button" className='Btn-Add-Item' onClick={() => addItem(selectedItemsReservations,setSelectedItemsReservations)}> Adicionar outro item </button>
 
             {/* BOTÃO DE CONFIRMAÇÃO DA RESERVA */}
             <button type="submit" className='Btn-Reserva'> Editar Reserva </button>

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 
 // FUNÇÃO QUE INSERE UMA NOVA RESERVA NO BANCO DE DADOS
 export const InsertReservation = async (reservation) => {
-    // REQUIÇÃO PARA O BACKEND
+    // REQUISIÇÃO PARA O BACKEND
     fetch('http://localhost:5000/reservations', {
           method: 'POST',
           headers: { 
