@@ -44,29 +44,96 @@ const messages = {
 };
 
 
-// COMONENTE PRINCIPAL DA PÁGINA
+// COMPONENTE PRINCIPAL DA PÁGINA
 const Main = () => {
+  // VARIÁVEL PARA NAVEGAR ENTRE PÁGINAS
+  const navigate = useNavigate();
+
   // DEFINIÇÃO DO TÍTULO DA PÁGINA
   useEffect(() => {
     document.title = "Calendário - Página Principal";
   }, []);
 
-  // VARIÁVEL PARA NAVEGAR ENTRE PÁGINAS
-  const navigate = useNavigate();
+  // CARREGA AS RESERVAS DO BANCO DE DADOS AO INICIAR A PÁGINA E AS ADICIONA AO CALENDÁRIO
+  useEffect(() => {
+    // FUNÇÃO ASSÍNCRONA PARA CARREGAR AS RESERVAS E ATUALIZAR O ESTADO DO CALENDÁRIO
+    const LoadReservationCalendar = async () => {
+      try {
+        // EXECUTA A FUNÇÃO DE CONSULTAR AS RESERVAS REGISTRADAS AO BANCO DE DADOS
+        const reservations = await LoadReservations();
 
-  // CONTROLE DE MODAIS
-  const [ModalDateIsOpen, setModalDateIsOpen] = useState(false);
-  const [isInsertModalOpen, setIsInsertModalOpen] = useState(false);
-  const [isReservationModalOpen, setIsReservationModalOpen] = useState(false);
-  const [isRemoveCondition,setIsRemoveCondition] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+        // ATUALIZA O ESTADO COM AS RESERVAS CARREGADAS
+        setRows(reservations);
+
+        // COLETANDO CADA RESERVA E TRANSFORMANDO EM EVENTO DO CALENDÁRIO
+        const dbEvents = reservations.map(r => {
+          console.log("Processando a Reserva:", r);
+
+          // EXTRAINDO A DATA DA RESERVA
+          const date = r.data;
+
+          // DETERMINANDO O TIPO DE RESERVA (MANHÃ, TARDE, DIA TODO)
+          const allDay = Number(r.allTime) === 1 || r.allTime === true;
+          const morning = Number(r.morningTime) === 1 || r.morningTime === true;
+          const afternoon = Number(r.afterTime) === 1 || r.afterTime === true;
+
+          const parseDateTime = (d, t) => {
+            if (!d) return null;
+            if (!t) return moment(d, 'YYYY-MM-DD').toDate();
+            return moment(`${d} ${t}`, 'YYYY-MM-DD HH:mm').toDate();
+          };
+
+          const start = date
+            ? (allDay ? parseDateTime(date,'00:00') : (morning ? parseDateTime(date,'00:00') : (afternoon ? parseDateTime(date,'12:00') : parseDateTime(date, '00:00'))))
+            : parseDateTime(date, '00:00');
+
+          const end = date
+            ? (allDay ? parseDateTime(date,'24:00') : (morning ? parseDateTime(date,'12:00') : (afternoon ? parseDateTime(date,'24:00') : parseDateTime(date, '00:00'))))
+            : parseDateTime(date, '00:00');
+
+          // RETORNANDO O FORMATO DA RESERVA PARA O CALENDÁRIO
+          return {
+            title: r.name_reservation || r.title || `Reserva ${r.userName || ''}`,
+            start: start || new Date(),
+            end: end || start || new Date(),
+            allDay,
+            morning,
+            afternoon,
+            id_reservation: r.idreservation,
+          };
+        });
+
+        // ATRIBUINDO AS RESERVAS AO CALENDÁRIO
+        setEvents(prev => {
+          const key = ev => `${ev.title}_${+new Date(ev.start)}`;
+          const existingKeys = new Set(prev.map(key));
+          const merged = [...prev];
+          dbEvents.forEach(e => {
+            if (!existingKeys.has(key(e))) merged.push(e);
+          });
+          console.log("Eventos carregados para o calendário:", merged);
+          return merged;
+        });
+      } catch (err) {
+        console.error('Erro ao carregar reservas:', err);
+      }
+    };
+
+    // EXECUTA A FUNÇÃO DE CARREGAR AS RESERVAS
+    LoadReservationCalendar();
+  }, []);
+
+  // ESTADOS DE CONTROLE DE MODAIS DA PÁGINA
+  const [isModalListReservationOpen, setIsModalListReservationOpen] = useState(false);        // MODAL QUE LISTA AS RESERVAS DO DIA
+  const [isModalInsertReservationOpen, setIsModalInsertReservationOpen] = useState(false);    // MODAL DE INSERÇÃO DE RESERVAS
+  const [isModalInfoReservationOpen, setIsModalInfoReservationOpen] = useState(false);        // MODAL DE INFORMAÇÕES DA RESERVA
+  const [isModalRemoveCondition,setIsModalRemoveCondition] = useState(false);                 // MODAL DE CONFIRMAÇÃO DE REMOÇÃO
+  const [isModalEditOpen, setIsModalEditOpen] = useState(false);                              // MODAL DE EDIÇÃO DE RESERVA
+
+  // ESTADOS DE CONTROLE DE CALENDÁRIO E RESERVAS
+
   const [editAllow, setEditAllow] = useState(false);
 
-  const [editData, setEditData] = useState({
-    startTime: "",
-    endTime: "",
-    allDay: false
-  });
 
   const [rows, setRows] = useState([]);
 
@@ -189,7 +256,7 @@ const Main = () => {
   }
 
   // FUNÇÃO QUE EMITE A DATA SELECIONADA E EXIBE OS HORARIOS DE CADA RESERVA
-  const DateSelect = (slotInfo) => {
+  const getDateReservations = (slotInfo) => {
     const date = slotInfo.start instanceof Date ? slotInfo.start : new Date(slotInfo.start);
     const eventsOfDay = events.filter(
       (ev) =>
@@ -206,11 +273,11 @@ const Main = () => {
     console.log(morningEvent,afternoonEvent,allDayEvent);
 
     setSelectedDate(date);
-    setModalDateIsOpen(true);
+    setIsModalListReservationOpen(true);
   };
 
   // FUNÇÃO QUE EXIBE DETALHES DA RESERVA AO CLICAR EM UMA DETERMINADA RESERVA
-  const HourSelect = (slotInfo) => {
+  const getReservationInfo = (slotInfo) => {
     // EXTRAINDO INFORMAÇÕES DA RESERVA
     const reservation_date = slotInfo ? moment(slotInfo.start).format('YYYY-MM-DD') : null;
     const id_reservation = slotInfo ? slotInfo.id_reservation : null;
@@ -239,7 +306,7 @@ const Main = () => {
       console.log('Itens encontrados',items)
       setHourItem(items);
       // ABRINDO O MODAL DE DETALHES DA RESERVA
-      setIsReservationModalOpen(true);
+      setIsModalInfoReservationOpen(true);
     }
 
     fetchReservation();
@@ -267,73 +334,6 @@ const Main = () => {
     navigate('/login');
   };
 
-  const openEditModal = () => {
-    setEditData({
-        startTime: moment(selectedReservation.inicial_hour, "HH:mm:ss").format("HH:mm"),
-        endTime: moment(selectedReservation.final_hour, "HH:mm:ss").format("HH:mm"),
-        allDay: !!selectedReservation.all_day,
-    });
-    setIsEditModalOpen(true);
-  };
-
-  // CARREGA AS RESERVAS DO BANCO DE DADOS AO INICIAR A PÁGINA E AS ADICIONA AO CALENDÁRIO
-  useEffect(() => {
-    const LoadReservationCalendar = async () => {
-      try {
-        // Aguarda o resultado da função LoadReservations
-        const reservations = await LoadReservations();
-        setRows(reservations); // Atualiza o estado com as reservas carregadas
-
-        const dbEvents = reservations.map(r => {
-          console.log("Processando reserva do banco:", r);
-          const date = r.data;
-          const allDay = Number(r.allTime) === 1 || r.allTime === true;
-          const morning = Number(r.morningTime) === 1 || r.morningTime === true;
-          const afternoon = Number(r.afterTime) === 1 || r.afterTime === true;
-
-          const parseDateTime = (d, t) => {
-            if (!d) return null;
-            if (!t) return moment(d, 'YYYY-MM-DD').toDate();
-            return moment(`${d} ${t}`, 'YYYY-MM-DD HH:mm').toDate();
-          };
-
-          const start = date
-            ? (allDay ? parseDateTime(date,'00:00') : (morning ? parseDateTime(date,'00:00') : (afternoon ? parseDateTime(date,'12:00') : parseDateTime(date, '00:00'))))
-            : parseDateTime(date, '00:00');
-
-          const end = date
-            ? (allDay ? parseDateTime(date,'24:00') : (morning ? parseDateTime(date,'12:00') : (afternoon ? parseDateTime(date,'24:00') : parseDateTime(date, '00:00'))))
-            : parseDateTime(date, '00:00');
-
-          return {
-            title: r.name_reservation || r.title || `Reserva ${r.userName || ''}`,
-            start: start || new Date(),
-            end: end || start || new Date(),
-            allDay,
-            morning,
-            afternoon,
-            id_reservation: r.idreservation,
-          };
-        });
-
-        setEvents(prev => {
-          const key = ev => `${ev.title}_${+new Date(ev.start)}`;
-          const existingKeys = new Set(prev.map(key));
-          const merged = [...prev];
-          dbEvents.forEach(e => {
-            if (!existingKeys.has(key(e))) merged.push(e);
-          });
-          console.log("Eventos carregados para o calendário:", merged);
-          return merged;
-        });
-      } catch (err) {
-        console.error('Erro ao carregar reservas:', err);
-      }
-    };
-
-    LoadReservationCalendar();
-  }, []);
-
   return (
     <div className='Website-Main'>
       <div className='Main'>
@@ -346,8 +346,8 @@ const Main = () => {
             style={{ height: '100%' }}
             views={['month']}
             selectable
-            onSelectSlot={DateSelect}
-            onSelectEvent={DateSelect}
+            onSelectSlot={getDateReservations}
+            onSelectEvent={getDateReservations}
             messages={messages}
           />
         </div>
@@ -361,19 +361,19 @@ const Main = () => {
         </div>
       </div>
 
-      <Modal isOpen={ModalDateIsOpen} onRequestClose={() => setModalDateIsOpen(false)} className="Modal-View-Day">
+      <Modal isOpen={isModalListReservationOpen} onRequestClose={() => setIsModalListReservationOpen(false)} className="Modal-View-Day">
         <div className='Modal-Bar Title-View-Modal'>
           <h2 className='Hour-Style'>
             Reservas do dia: {selectedDate ? moment(selectedDate).format('DD/MM/YYYY') : '...'}
           </h2>
-          <button onClick={() => setModalDateIsOpen(false)} className='Modal-Btn-Close'>
+          <button onClick={() => setIsModalListReservationOpen(false)} className='Modal-Btn-Close'>
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
 
         <div className='Hour-Calendar'>
           <div className='Hours-Reservations'>
-            <div className='Hour-Title' onClick={Object.keys(morningEvents).length > 0 ? () => HourSelect(morningEvents):null}>
+            <div className='Hour-Title' onClick={Object.keys(morningEvents).length > 0 ? () => getReservationInfo(morningEvents):null}>
               <h4>Reservas da manhã:</h4>
               {morningEvents && Object.keys(morningEvents).length > 0 ? (
                 <div className='p-reservation'>
@@ -385,7 +385,7 @@ const Main = () => {
                 </div>
               )}
             </div>
-            <div className='Hour-Title' onClick={Object.keys(afternoonEvents).length > 0 ? () => HourSelect(afternoonEvents):null}>
+            <div className='Hour-Title' onClick={Object.keys(afternoonEvents).length > 0 ? () => getReservationInfo(afternoonEvents):null}>
               <h4>Reservas da tarde:</h4>
               {afternoonEvents && Object.keys(afternoonEvents).length > 0 ? (
                 <div className='p-reservation'>
@@ -397,7 +397,7 @@ const Main = () => {
                 </div>
               )}
             </div>
-            <div className='Hour-Title' onClick={Object.keys(allDayEvents).length > 0 ? () => HourSelect(allDayEvents):null}>
+            <div className='Hour-Title' onClick={Object.keys(allDayEvents).length > 0 ? () => getReservationInfo(allDayEvents):null}>
               <h4>Reservas do dia todo:</h4>
               {allDayEvents && Object.keys(allDayEvents).length > 0 ? (
                 <div className='p-reservation'>
@@ -410,7 +410,7 @@ const Main = () => {
               )}
             </div>
           </div>
-          <button className='Btn-Reserva' onClick={() => setIsInsertModalOpen(true)}>
+          <button className='Btn-Reserva' onClick={() => setIsModalInsertReservationOpen(true)}>
             Adicionar Reserva
           </button>
         </div>
@@ -418,12 +418,12 @@ const Main = () => {
 
       {/* MODAL RESPONSÁVEL PARA INSERÇÃO DA RESERVA AO CALENDÁRIO */}
       {/* === TUDO CERTO AQUI, NÃO MEXER */}
-      <Modal isOpen={isInsertModalOpen} onRequestClose={() => setIsInsertModalOpen(false)} className="Modal-Insert">
+      <Modal isOpen={isModalInsertReservationOpen} onRequestClose={() => setIsModalInsertReservationOpen(false)} className="Modal-Insert">
         <div className='Modal-Header'>
           <h2 className='Hour-Style'>
             Adicionando reserva na data {selectedDate ? moment(selectedDate).format('DD/MM/YYYY') : '...'}
           </h2>
-          <button onClick={() => setIsInsertModalOpen(false)} className='Modal-Btn-Close'>
+          <button onClick={() => setIsModalInsertReservationOpen(false)} className='Modal-Btn-Close'>
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
@@ -485,12 +485,12 @@ const Main = () => {
       </Modal>
 
       {/* MODAL RESPONSÁVEL PARA MOSTRAR OS DADOS DAQUELA RESERVA */}
-      <Modal isOpen={isReservationModalOpen} onRequestClose={() => setIsReservationModalOpen(false)} className="Modal-Reservation">
+      <Modal isOpen={isModalInfoReservationOpen} onRequestClose={() => setIsModalInfoReservationOpen(false)} className="Modal-Reservation">
           <div className='Modal-Header'>
             <h2 className='Hour-Style'>
               Sobre a reserva: {selectedDate ? moment(selectedDate).format('DD/MM/YYYY') : '...'}
             </h2>                   
-            <button onClick={() => setIsReservationModalOpen(false)} className='Modal-Btn-Close'>
+            <button onClick={() => setIsModalInfoReservationOpen(false)} className='Modal-Btn-Close'>
               <FontAwesomeIcon icon={faXmark} />
             </button>
           </div>
@@ -537,26 +537,26 @@ const Main = () => {
               </div>
             </div>
             <div className='Btn-Bar'>
-                  <button className='Btn-Modal-Reservation' disabled={editAllow} onClick={openEditModal}>Editar reserva</button>
-                  <button className='Btn-Modal-Reservation' disabled={editAllow} onClick={() => setIsRemoveCondition(true)}>Remover reserva</button>
+                  <button className='Btn-Modal-Reservation' disabled={editAllow} onClick={() => setIsModalEditOpen(true)}>Editar reserva</button>
+                  <button className='Btn-Modal-Reservation' disabled={editAllow} onClick={() => setIsModalRemoveCondition(true)}>Remover reserva</button>
             </div>
           </div>
       </Modal>
 
-      <Modal isOpen={isRemoveCondition} onRequestClose={() => setIsRemoveCondition(false)} className='Remove-Condition'>
+      <Modal isOpen={isModalRemoveCondition} onRequestClose={() => setIsModalRemoveCondition(false)} className='Remove-Condition'>
         <p className='p-remove'>Certeza que deseja remover a reserva?</p>
         <div>
-          <button className='Btn-cancel-remove' onClick={() => setIsRemoveCondition(false)}> Cancelar</button>
+          <button className='Btn-cancel-remove' onClick={() => setIsModalRemoveCondition(false)}> Cancelar</button>
           <button className='Btn-confirm-remove' onClick={() => DeleteReservation(selectedReservation)}>Remover a reserva</button>
         </div>
       </Modal>
 
-      <Modal isOpen={isEditModalOpen} onRequestClose={() => setIsEditModalOpen(false)} className="Modal-Insert">
+      <Modal isOpen={isModalEditOpen} onRequestClose={() => setIsModalEditOpen(false)} className="Modal-Insert">
         <div className='Modal-Header'>
           <h2 className='Hour-Style'>
             Editando reserva na data {selectedDate ? moment(selectedDate).format('DD/MM/YYYY') : '...'}
           </h2>
-          <button onClick={() => setIsEditModalOpen(false)} className='Modal-Btn-Close'>
+          <button onClick={() => setIsModalEditOpen(false)} className='Modal-Btn-Close'>
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
@@ -564,26 +564,20 @@ const Main = () => {
         {/* FORMULARIO DE INSERÇÃO DA RESERVA */}
         <div className='Insert'>
           <form className='Insert-Form' onSubmit={ReservationEdit}>
-            {editData ? (
-              <>
-                <div className='radio-inputs'>
-                  <div className='radio-style'>
-                    <label className='radio-label'><FontAwesomeIcon icon={faSun} className='icon-radio'/>Manhã</label>
-                    <input type='radio' name='hourRadio' className='input-radio' value='morning'/>
-                  </div>
-                  <div className='radio-style'>
-                    <label className='radio-label'><FontAwesomeIcon icon={faMoon} className='icon-radio'/>Tarde</label>
-                    <input type='radio' name='hourRadio' className='input-radio' value='afternoon'/>
-                  </div>
-                  <div className='radio-style'>
-                    <label className='radio-label'><FontAwesomeIcon icon={faCalendar} className='icon-radio'/>Dia todo</label>
-                    <input type='radio' name='hourRadio' className='input-radio' value='allDay'/>
-                  </div>
-                </div>
-              </>
-            ):(
-              <p> Falha no carregamento </p>
-            )}
+            <div className='radio-inputs'>
+              <div className='radio-style'>
+                <label className='radio-label'><FontAwesomeIcon icon={faSun} className='icon-radio'/>Manhã</label>
+                <input type='radio' name='hourRadio' className='input-radio' value='morning'/>
+              </div>
+              <div className='radio-style'>
+                <label className='radio-label'><FontAwesomeIcon icon={faMoon} className='icon-radio'/>Tarde</label>
+                <input type='radio' name='hourRadio' className='input-radio' value='afternoon'/>
+              </div>
+              <div className='radio-style'>
+                <label className='radio-label'><FontAwesomeIcon icon={faCalendar} className='icon-radio'/>Dia todo</label>
+                <input type='radio' name='hourRadio' className='input-radio' value='allDay'/>
+              </div>
+            </div>
 
             {/* SELEÇÃO DE ITEMS DINAMICA */}
 
